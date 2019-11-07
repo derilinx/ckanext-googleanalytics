@@ -10,8 +10,15 @@ import ckan.model as model
 
 import dbutil
 
-log = logging.getLogger('ckanext.googleanalytics')
+log = logging.getLogger(__name__)
 PACKAGE_URL = '/dataset/'  # XXX get from routes...
+LIBRARY_URL = '/library_record/'
+LAWS_URL = '/laws_record/'
+AGREEMENT_URL = '/agreement/'
+MAPS = "/maps/"
+PROFILES = "/profile/"
+url_map = [PACKAGE_URL, LIBRARY_URL, LAWS_URL, AGREEMENT_URL, MAPS, PROFILES]
+
 DEFAULT_RESOURCE_URL_TAG = '/downloads/'
 
 RESOURCE_URL_REGEX = re.compile('/dataset/[a-z0-9-_]+/resource/([a-z0-9-_]+)')
@@ -240,7 +247,7 @@ class LoadAnalytics(CkanCommand):
                     (PACKAGE_URL, self.resource_url_tag)
             packages_data = self.get_ga_data(query_filter=query)
             self.save_ga_data(packages_data)
-            log.info("Saved %s records from google" % len(packages_data))
+            print("Collected %s records from google" % len(packages_data))
 
     def save_ga_data(self, packages_data):
         """Save tuples of packages_data to the database
@@ -250,25 +257,26 @@ class LoadAnalytics(CkanCommand):
             ever = visits.get('ever', 0)
             matches = RESOURCE_URL_REGEX.match(identifier)
             if matches:
+                print("Found resource view: {}".format(matches.group(1)))
                 resource_url = identifier[len(self.resource_url_tag):]
                 resource = model.Session.query(model.Resource).autoflush(True)\
                            .filter_by(id=matches.group(1)).first()
                 if not resource:
-                    log.warning("Couldn't find resource %s" % resource_url)
+                    log.warning("Warning: Couldn't find resource %s" % resource_url)
                     continue
                 dbutil.update_resource_visits(resource.id, recently, ever)
-                log.info("Updated %s with %s visits" % (resource.id, visits))
+                print("Updated %s with %s visits" % (resource.id, visits))
             else:
                 package_name = identifier[len(PACKAGE_URL):]
                 if "/" in package_name:
-                    log.warning("%s not a valid package name" % package_name)
+                    log.warning("Warning: %s not a valid package name" % package_name)
                     continue
                 item = model.Package.by_name(package_name)
                 if not item:
-                    log.warning("Couldn't find package %s" % package_name)
+                    log.warning("Warning: Couldn't find package %s" % package_name)
                     continue
                 dbutil.update_package_visits(item.id, recently, ever)
-                log.info("Updated %s with %s visits" % (item.id, visits))
+                print("Updated %s with %s visits" % (item.id, visits))
         model.Session.commit()
 
     def ga_query(self, query_filter=None, from_date=None, to_date=None,
@@ -312,10 +320,13 @@ class LoadAnalytics(CkanCommand):
         recent_date = recent_date.strftime("%Y-%m-%d")
         floor_date = datetime.date(2005, 1, 1)
         packages = {}
-        queries = ['ga:pagePath=~%s' % PACKAGE_URL]
+        queries = []
+        for _url in url_map:
+            queries.append('ga:pagePath=~%s' % _url)
         dates = {'recent': recent_date, 'ever': floor_date}
         for date_name, date in dates.iteritems():
             for query in queries:
+                print("Gathering for: {}".format(query))
                 results = self.ga_query(query_filter=query,
                                         metrics='ga:uniquePageviews',
                                         from_date=date)
@@ -333,4 +344,5 @@ class LoadAnalytics(CkanCommand):
                             val += packages[package][date_name]
                         packages.setdefault(package, {})[date_name] = \
                             int(count) + val
+        print("Total Length of data collected: {}".format(len(packages)))
         return packages

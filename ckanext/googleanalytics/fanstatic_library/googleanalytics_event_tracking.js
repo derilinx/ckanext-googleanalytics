@@ -5,7 +5,7 @@ this.ckan.module('google-analytics', function(jQuery, _) {
       googleanalytics_resource_prefix: ''
     },
     initialize: function() {
-      jQuery('a.resource-url-analytics').on('click', function() {
+      jQuery("a.resource-url-analytics, a.btn-download").on("click", function() {
           var resource_url = encodeURIComponent(jQuery(this).prop('href'));
           if (resource_url) {
             ga('send', 'event', 'Resource', 'Download', resource_url);
