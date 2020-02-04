@@ -19,7 +19,7 @@ PROFILES_URL_REGEX = re.compile('.*/profile/([a-z0-9-_]+)')
 EVENT_CATEGORIES_ACTION = "Resource:Download"
 
 # This should go to config
-DATASET_TYPES = "dataset laws_record agreement library_record"
+DATASET_TYPES = "dataset laws_record agreement library_record map profile"
 
 
 def get_data_for_events(self, event_category, event_action, from_date=None, to_date=None,
@@ -158,7 +158,7 @@ def ga_report(self, start_date=None, end_date=None):
             # Loop over all the events
             for _event in events:
                 _category, _action = _event.strip().split(":")
-                ga_evt_res = get_data_for_events(self, _category, _action, from_date=from_date, to_date=to_date)
+                ga_evt_res = get_data_for_events(self, _category, _action, from_date=start_date, to_date=end_date)
                 if _action.lower() == "download":
                     # Currently supports download event
                     # Call the events parser

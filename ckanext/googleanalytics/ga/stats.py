@@ -211,7 +211,7 @@ class GoogleAnalyticsViews:
         else:
             log.warning("Given resource id: {} doesnt exists".format(resource_id))
 
-    def ga_download_event(self, event_action, event_data):
+    def ga_download_event(self, event_action, data):
         """
         TODO: How to generalise the events??
 
@@ -222,8 +222,8 @@ class GoogleAnalyticsViews:
             - dataset_views
             - resource_views
 
-        :param event_type: type of the event
-        :param events_data: events data
+        :param event_action: type of the event
+        :param data: events data
         :return:
         """
         self.events[event_action] = dict()
@@ -288,9 +288,9 @@ class GoogleAnalyticsViews:
         """
 
         if not validators.check_ga_query_res(data):
-            raise Exception("GA query for data type: {} resulted in empty result".format(data_type))
+            print("GA query for data type: {} resulted in empty result".format(data_type))
 
-        rows = data.get('rows')
+        rows = data.get('rows', [])
         for _item in rows:
             _url = _item[0]
             url_object = requests.utils.urlparse(_url)
