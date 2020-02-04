@@ -7,8 +7,9 @@ this.ckan.module('google-analytics', function(jQuery, _) {
     initialize: function() {
       jQuery("a.resource-url-analytics, a.btn-download").on("click", function() {
           var resource_url = jQuery(this).prop('href');
+          var resource_id = jQuery(this).attr('resource_id');
           if (resource_url) {
-            ga('send', 'event', 'Resource', 'Download', resource_url);
+            ga('send', 'event', 'Resource', 'Download', resource_id+'|'+resource_url);
           }
       });
    

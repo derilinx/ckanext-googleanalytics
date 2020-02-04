@@ -7,8 +7,9 @@ import time
 from pylons import config as pylonsconfig
 from ckan.lib.cli import CkanCommand
 import ckan.model as model
-
 import dbutil
+from ckanext.googleanalytics.ga import commands
+from ga_auth import init_service, get_profile_id
 
 log = logging.getLogger(__name__)
 PACKAGE_URL = '/dataset/'  # XXX get from routes...
@@ -21,8 +22,10 @@ url_map = [PACKAGE_URL, LIBRARY_URL, LAWS_URL, AGREEMENT_URL, MAPS, PROFILES]
 
 DEFAULT_RESOURCE_URL_TAG = '/downloads/'
 
-RESOURCE_URL_REGEX = re.compile('/dataset/[a-z0-9-_]+/resource/([a-z0-9-_]+)')
+RESOURCE_URL_REGEX = re.compile('(.*)/dataset/[a-z0-9-_]+/resource/([a-z0-9-_]+)')
 DATASET_EDIT_REGEX = re.compile('/dataset/edit/([a-z0-9-_]+)')
+DATASET_URL_REGEX = re.compile('(.*)/dataset/([a-z0-9-_]+)')
+
 
 
 class InitDB(CkanCommand):
@@ -53,7 +56,7 @@ class LoadAnalytics(CkanCommand):
     """
     summary = __doc__.split('\n')[0]
     usage = __doc__
-    max_args = 3
+    max_args = 4
     min_args = 1
     TEST_HOST = None
     CONFIG = None
@@ -63,15 +66,61 @@ class LoadAnalytics(CkanCommand):
             self._load_config()
             self.CONFIG = pylonsconfig
 
-        self.resource_url_tag = self.CONFIG.get(
-            'googleanalytics_resource_prefix',
-            DEFAULT_RESOURCE_URL_TAG)
+        self.resource_url_tag = self.CONFIG.get('googleanalytics_resource_prefix', DEFAULT_RESOURCE_URL_TAG)
 
         # funny dance we need to do to make sure we've got a
         # configured session
         model.Session.remove()
         model.Session.configure(bind=model.meta.engine)
-        self.parse_and_save()
+        self.excecute_command()
+
+    def excecute_command(self):
+        """
+        Functionality:
+            - Grab the GA config/token file (1st argument)
+            - 2nd argument is command
+        Grab raw data from Google Analytics and save to the database
+        """
+
+        # Get the token file and check if token exists
+        ga_tokenfile = self.args[0]
+        if not os.path.exists(ga_tokenfile):
+            raise Exception('Cannot find the token file %s' % self.args[0])
+
+        # Set all credentials
+        try:
+            self.service = init_service(ga_tokenfile)
+            self.profile_id = get_profile_id(self.service)
+        except Exception as e:
+            raise Exception('Unable to create a service: {0}'.format(e))
+
+        # Get the command
+        try:
+            cmd = self.args[1]
+        except IndexError as e:
+            log.warning("Setting a defualt command: bulk import")
+            cmd = "get_ga_data"
+
+        if cmd == "ga_report":
+            try:
+                start_date = self.args[2]
+                end_date = self.args[3]
+                commands.ga_report(self, start_date=start_date, end_date=end_date)
+            except IndexError:
+                raise Exception("From date and to date is missing")
+
+        elif cmd == "bulk_import":
+            self.bulk_import()
+
+        elif cmd == "get_ga_data":
+            query = 'ga:pagePath=~%s,ga:pagePath=~%s' % \
+                    (PACKAGE_URL, self.resource_url_tag)
+            packages_data = self.get_ga_data(query_filter=query)
+            # self.save_ga_data(packages_data)
+            print("Collected %s records from google" % len(packages_data))
+
+        else:
+            raise Exception("No command found for : {}".format(cmd))
 
     def internal_save(self, packages_data, summary_date):
         engine = model.meta.engine
@@ -224,31 +273,6 @@ class LoadAnalytics(CkanCommand):
             time.sleep(0.2)
         return packages
 
-    def parse_and_save(self):
-        """Grab raw data from Google Analytics and save to the database"""
-        from ga_auth import (init_service, get_profile_id)
-
-        tokenfile = self.args[0]
-        if not os.path.exists(tokenfile):
-            raise Exception('Cannot find the token file %s' % self.args[0])
-
-        try:
-            self.service = init_service(self.args[0])
-        except TypeError as e:
-            raise Exception('Unable to create a service: {0}'.format(e))
-        self.profile_id = get_profile_id(self.service)
-
-        if len(self.args) > 1:
-            if len(self.args) > 2 and self.args[1].lower() != 'internal':
-                raise Exception('Illegal argument %s' % self.args[1])
-            self.bulk_import()
-        else:
-            query = 'ga:pagePath=~%s,ga:pagePath=~%s' % \
-                    (PACKAGE_URL, self.resource_url_tag)
-            packages_data = self.get_ga_data(query_filter=query)
-            self.save_ga_data(packages_data)
-            print("Collected %s records from google" % len(packages_data))
-
     def save_ga_data(self, packages_data):
         """Save tuples of packages_data to the database
         """
@@ -330,6 +354,7 @@ class LoadAnalytics(CkanCommand):
                 results = self.ga_query(query_filter=query,
                                         metrics='ga:uniquePageviews',
                                         from_date=date)
+
                 if 'rows' in results:
                     for result in results.get('rows'):
                         package = result[0]
