@@ -1,0 +1,10 @@
+{% ckan_extends %}
+
+{% block content_primary_nav %}
+  {{ super() }}
+
+    {% if h.check_access('sysadmin') %}
+        {{ h.build_nav_icon('ga_report', _('GA Report'), id=user.name, icon='clock-o') }}
+    {% endif %}
+
+{% endblock %}

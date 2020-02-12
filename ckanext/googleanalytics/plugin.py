@@ -9,7 +9,7 @@ import ckan.plugins as p
 from routes.mapper import SubMapper
 from pylons import config
 from ckan.controllers.package import PackageController
-
+from ckanext.googleanalytics import action
 import urllib2
 import importlib
 import hashlib
@@ -90,6 +90,7 @@ class GoogleAnalyticsPlugin(p.SingletonPlugin):
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.ITemplateHelpers)
+    p.implements(p.IActions)
 
     analytics_queue = Queue.Queue()
 
@@ -145,7 +146,6 @@ class GoogleAnalyticsPlugin(p.SingletonPlugin):
             t = AnalyticsPostThread(self.analytics_queue)
             t.setDaemon(True)
             t.start()
-
 
     def update_config(self, config):
         '''Change the CKAN (Pylons) environment configuration.
@@ -209,6 +209,11 @@ class GoogleAnalyticsPlugin(p.SingletonPlugin):
             m.connect('/rest/{register}/{id}', action='update', conditions=POST)
             m.connect('/rest/{register}/{id}', action='delete', conditions=DELETE)
 
+        ga_controller = 'ckanext.googleanalytics.controller:GAReport'
+        with SubMapper(map, controller=ga_controller) as m:
+            m.connect('ga_report', '/user/{id}/report', action='report')
+            m.connect('download_report', '/user/{id}/download_report/{run_id}/{action_name}', action='download')
+
         return map
 
     def after_map(self, map):
@@ -233,6 +238,15 @@ class GoogleAnalyticsPlugin(p.SingletonPlugin):
 
         '''
         return {'googleanalytics_header': self.googleanalytics_header}
+
+    def get_actions(self):
+        """
+        Register all API actions
+        :return: dict
+        """
+        return {
+            "run_ga_report": action.ga_report_run
+        }
 
     def googleanalytics_header(self):
         '''Render the googleanalytics_header snippet for CKAN 2.0 templates.
