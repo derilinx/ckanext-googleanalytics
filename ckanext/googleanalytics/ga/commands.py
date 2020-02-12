@@ -140,6 +140,7 @@ def ga_report(self, start_date=None, end_date=None):
             data_types = ['dataset']
 
         # Get page views for each data types
+
         for _type in data_types:
             print("Gathering data for data type: {}".format(_type))
             _ga_path = "/{}/".format(_type.strip())
@@ -150,6 +151,11 @@ def ga_report(self, start_date=None, end_date=None):
             # call the dataset/resource views parser
             ga_views.ga_pageviews(_type, ga_dt_res)
             print("Finished processing for the data type :{}".format(_type))
+
+        # Store GA Report for page views (dataset, resource and url type download)
+        ga_views.save_to_db("ga_report_package", "dataset_views")
+        ga_views.save_to_db("ga_report_resource", "resource_views")
+        ga_views.save_to_db("ga_report_resource", "downloads")
 
         # process for all the events
         if EVENT_CATEGORIES_ACTION:
@@ -167,5 +173,7 @@ def ga_report(self, start_date=None, end_date=None):
                     log.error("Parser is not defined for the event: {}, hence ignoring".format(_action))
                     print("Parser is not defined for the event: {}, hence ignoring".format(_action))
 
+        # Save all the events
+        ga_views.save_to_db("ga_report_events", "events")
         # Print the summary
         print(ga_views)

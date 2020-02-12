@@ -1,4 +1,5 @@
 from ckanext.googleanalytics.ga import validators
+from ckanext.googleanalytics.dbutil import insert_ga_report, insert_ga_events
 import ckan.model as model
 from sqlalchemy import or_
 from ckan.plugins import toolkit
@@ -78,6 +79,20 @@ class GoogleAnalyticsViews:
             r.append("\nCount of datasets/resource for the event action - {}: {}".format(_act, len(self.events[_act])))
         return " ".join(r)
 
+    def save_to_db(self, table_name=None, attribute_name=None):
+        if table_name and attribute_name:
+            if hasattr(self, attribute_name):
+                if attribute_name == "events":
+                    # Insert event data
+                    insert_ga_events(getattr(self, attribute_name), self.start_date, self.end_date)
+                else:
+                    # Insert page views data
+                    insert_ga_report(table_name, getattr(self, attribute_name), self.start_date, self.end_date)
+            else:
+                log.error("No attribute named {} associated with the class GoogleAnalyticsViews".format(attribute_name))
+        else:
+            log.error("No table name or attribute name is specified")
+
     def _get_resource_from_url(self, resource_url):
         """
         Get resource object given resource url. Get the latest created url
@@ -138,11 +153,9 @@ class GoogleAnalyticsViews:
                     'metrics': 'resource',
                     'site_code': self._site_code,
                     'label': label,
-                    'id': resource_id,
+                    'resource_id': resource_id,
                     'metric_value': int(views),
-                    'extras': {
-                        "state": rsc.state
-                    }
+                    "state": rsc.state
                 }
         else:
             log.warning("Given resource id: {} doesnt exists".format(resource_id))
@@ -170,7 +183,7 @@ class GoogleAnalyticsViews:
                     'metrics': 'package',
                     'site_code': self._site_code,
                     'label': label,
-                    'id': dataset_id,
+                    'package_id': dataset_id,
                     'metric_value': int(views),
                     'type': pkg.type,
                     'private': pkg.private,
@@ -202,11 +215,9 @@ class GoogleAnalyticsViews:
                     'metrics': 'resource',
                     'site_code': self._site_code,
                     'label': label,
-                    'id': resource_id,
+                    'resource_id': resource_id,
                     'metric_value': int(views),
-                    'extras': {
-                        "state": rsc.state
-                    }
+                    "state": rsc.state
                 }
         else:
             log.warning("Given resource id: {} doesnt exists".format(resource_id))
@@ -236,7 +247,6 @@ class GoogleAnalyticsViews:
             _event_category = _event[0]
             _event_action = _event[1]
             _resource_id = None
-
             # Download event label is separated by pipe (recently made changes - consider the previous type as well)
             _process = _url.split("|")
             if len(_process) > 1:
@@ -253,6 +263,7 @@ class GoogleAnalyticsViews:
                     # URl is not from ckan, hence get id from database given url
                     # Try to get the resource id from the database given resource url
                     # This scenario occurs when the resource url is 3rd part url
+
                     resource = self._get_resource_from_url(label)
                     if resource:
                         _resource_id = resource.id
