@@ -1,8 +1,12 @@
+from ckan import logic
 import httplib2
 from apiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
-
+import os
 from pylons import config
+import json
+
+NotFound = logic.NotFound
 
 
 def _prepare_credentials(credentials_filename):
@@ -62,3 +66,51 @@ def get_profile_id(service):
                 return profiles.get('items')[0].get('id')
 
     return None
+
+
+class GoogleAnalyticsCredentialsObject:
+    """
+    This is to register google analytics credentials for the UI. CLI command registers credentials from the file
+    But UI we need to register service from the config
+    """
+
+    _default_path = "/usr/lib/ckan/default/src/ckan/"
+
+    def __init__(self):
+
+        self.service = None
+        self.profile_id = None
+        self.CONFIG = config
+        self._cred_file = self._get_file()
+
+    def __repr__(self):
+        return "This is required to call GA from UI"
+
+    def __str__(self):
+        return GoogleAnalyticsCredentialsObject.__doc__
+
+    def __call__(self, *args, **kwargs):
+        self.set_credentials()
+
+    def _get_file(self):
+        """
+        Validates the availability of required credentials
+        :return: raises error
+        """
+        _file_name = config.get("googleanalytics.credential.file.name",
+                                "opendevelopmentmekong2-1533ebbee935.json")
+
+        file = "{}{}".format(self._default_path, _file_name)
+        if not os.path.isfile(file):
+            raise NotFound("Google Analytics credentials error. Contact system admin")
+
+        return file
+
+    def set_credentials(self):
+        """
+        Call init service and profile id
+        :return:
+        """
+        self.service = init_service(self._cred_file)
+        self.profile_id = get_profile_id(self.service)
+

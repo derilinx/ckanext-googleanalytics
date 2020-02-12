@@ -1,4 +1,5 @@
 import requests
+from dateutil.parser import parse
 
 
 def check_url_filters(url):
@@ -46,3 +47,41 @@ def check_resource_views_filters(query):
             return True
     return False
 
+
+def validate_date(key, data_dict):
+    """
+    Validate the date format
+    :param key: from_dt or to_dt
+    :param data_dict: dict
+    :param errors: dict
+    :return: raises error
+    """
+    if not data_dict.get(key):
+        raise ValueError
+    parse(data_dict.get(key))
+
+
+def check_date_period(data_dict, errors, limit=184):
+    """
+    Check the dates from and two dates. Allowed period is only for 6 months period.
+    :param data_dict: dict
+    :param errors: dict
+    :param limit: no of days (6 months nearly 182 days)
+    :return: errors
+    """
+
+    from_dt = parse(data_dict.get('from_dt'))
+    to_dt = parse(data_dict.get('to_dt'))
+
+    if from_dt >= to_dt:
+        errors['from_dt'] = ["From date greater than to date"]
+        return errors
+
+    _period = (from_dt - to_dt).days
+
+    if _period > limit:
+        errors['from_dt'] = ["Exceeded the limit"]
+        errors['to_dt'] = ["Exceeded the limit"]
+        return errors
+
+    return errors
