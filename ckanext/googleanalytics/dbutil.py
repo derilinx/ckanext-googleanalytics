@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, DateTime
+from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, DateTime, Text
 from sqlalchemy.sql import select, text
 from sqlalchemy import func
 from sqlalchemy.ext.declarative import declarative_base
@@ -18,11 +18,12 @@ class GAReportPackage(Base):
     __tablename__ = 'ga_report_package'
     _key = Column(Integer, primary_key=True)
     package_id = Column(String(60), nullable=False)
+    package_title = Column(Text, nullable=True)
     run_id = Column(String(60), nullable=False)
     metric_type = Column(String(60), nullable=False)
     metrics = Column(String(60), nullable=False)
     site_code = Column(String(20), nullable=False)
-    label = Column(String(300))
+    label = Column(Text)
     metric_value = Column(Integer)
     type = Column(String(60))
     state = Column(String(60))
@@ -41,11 +42,12 @@ class GAReportResource(Base):
     __tablename__ = 'ga_report_resource'
     _key = Column(Integer, primary_key=True)
     resource_id = Column(String(60), nullable=False)
+    resource_title = Column(Text, nullable=True)
     run_id = Column(String(60), nullable=False)
     metric_type = Column(String(60), nullable=False)
     metrics = Column(String(60), nullable=False)
     site_code = Column(String(20), nullable=False)
-    label = Column(String(300))
+    label = Column(Text)
     metric_value = Column(Integer)
     state = Column(String(60))
     from_date = Column(DateTime, nullable=False)
@@ -60,11 +62,12 @@ class GAReportEvents(Base):
     __tablename__ = 'ga_report_events'
     _key = Column(Integer, primary_key=True)
     id = Column(String(60), nullable=False)
+    title = Column(Text, nullable=True)
     run_id = Column(String(60), nullable=False)
     metric_type = Column(String(60), nullable=False)
     metric_value = Column(Integer)
     site_code = Column(String(20), nullable=False)
-    label = Column(String(300))
+    label = Column(Text)
     category = Column(String(200), nullable=False)
     action = Column(String(200), nullable=False)
     from_date = Column(DateTime, nullable=False)

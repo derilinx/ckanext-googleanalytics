@@ -25,10 +25,16 @@ ValidationError = logic.ValidationError
 
 
 class GAReport(UserController):
-
+    """
+    Controller for Google Analytics report generation.
+    TODO:
+        -  When validation error. The for does not retain value
+        - Check the core CKAN controller on how this retention of the form value is handled.
+    """
     def _clear_tables(self):
         """
-        Clears all the postgtgres GA report table i.e. ga_report_package/ga_report_resource/ga_report_event
+        Clears all the GA report table i.e. ga_report_package/ga_report_resource/ga_report_event
+        Any any error rollback the session.
         :return: Nothing
         """
         _site_code = config.get('ckanext.odm.site_code', '')
@@ -93,6 +99,7 @@ class GAReport(UserController):
         if request.method == "POST":
             _parms = request.params
 
+            # This on press of button Generate Report
             if "run" in _parms:
                 data_dict['from_dt'] = _parms.get('from_dt')
                 data_dict['to_dt'] = _parms.get('to_dt')
@@ -109,12 +116,15 @@ class GAReport(UserController):
                     vars["errors"] = e.error_dict
                     vars["error_summary"] = e.error_summary
                     h.flash_error(_("Form validation error. Please check the given dates"))
+                    return render('user/ga_report.html', extra_vars=vars)
 
+            # This on press of button Clear
             elif "clear" in _parms:
                 self._clear_tables()
                 h.flash_success(_('Cleared all Google Analytics report table'))
 
-            return render('user/ga_report.html', extra_vars=vars)
+            report_page = h.url_for(controller='ckanext.googleanalytics.controller:GAReport', action='report', id=id)
+            h.redirect_to(report_page)
 
     def download(self, id=None, run_id=None, action_name=None):
         """
@@ -179,7 +189,8 @@ class GAReport(UserController):
             return result
 
         # If not data availabel. This should not occur.
-        self.report(id)
+        report_page = h.url_for(controller='ckanext.googleanalytics.controller:GAReport', action='report', id=id)
+        h.redirect_to(report_page)
 
 
 class GAController(BaseController):

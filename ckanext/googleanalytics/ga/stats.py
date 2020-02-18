@@ -80,6 +80,9 @@ class GoogleAnalyticsViews:
         return " ".join(r)
 
     def save_to_db(self, table_name=None, attribute_name=None):
+        print("*********")
+        print(table_name)
+        print(attribute_name)
         if table_name and attribute_name:
             if hasattr(self, attribute_name):
                 if attribute_name == "events":
@@ -154,6 +157,7 @@ class GoogleAnalyticsViews:
                     'site_code': self._site_code,
                     'label': label,
                     'resource_id': resource_id,
+                    'resource_title': rsc.name or rsc.id,
                     'metric_value': int(views),
                     "state": rsc.state
                 }
@@ -184,6 +188,7 @@ class GoogleAnalyticsViews:
                     'site_code': self._site_code,
                     'label': label,
                     'package_id': dataset_id,
+                    "package_title": pkg.title or pkg.name,
                     'metric_value': int(views),
                     'type': pkg.type,
                     'private': pkg.private,
@@ -216,6 +221,7 @@ class GoogleAnalyticsViews:
                     'site_code': self._site_code,
                     'label': label,
                     'resource_id': resource_id,
+                    'resource_title': rsc.name or rsc.id,
                     'metric_value': int(views),
                     "state": rsc.state
                 }
@@ -247,12 +253,14 @@ class GoogleAnalyticsViews:
             _event_category = _event[0]
             _event_action = _event[1]
             _resource_id = None
+            resource = None
             # Download event label is separated by pipe (recently made changes - consider the previous type as well)
             _process = _url.split("|")
             if len(_process) > 1:
                 # first element is resource id
                 label = _process[1]
                 _resource_id = _process[0].strip()
+                resource = self._get_resource(_resource_id)
             else:
                 # if not separated by pipe - check if the url type is of ckan /download/
                 label = _url
@@ -268,7 +276,7 @@ class GoogleAnalyticsViews:
                     if resource:
                         _resource_id = resource.id
 
-            if _resource_id:
+            if _resource_id and resource:
                 if _resource_id in self.events:
                     self.events[event_action][_resource_id]['metrics_value'] += _event_count
                 else:
@@ -281,6 +289,7 @@ class GoogleAnalyticsViews:
                         "category": _event_category,
                         "action": _event_action,
                         "id": _resource_id,
+                        'title': resource.name or _resource_id,
                         "label": label
                     }
                     self.events[event_action][_resource_id] = _data
@@ -322,7 +331,9 @@ class GoogleAnalyticsViews:
                     # Note: this is used only when there is not download event present
                     # in ODM there is a resource download event exists which is more accurate
                     _download_id = is_download.groups()[0]
-                    self.capture_resource_download(resource_id=_download_id, views=_views, label=_url)
+                    # Enable this if there is not download event
+                    #self.capture_resource_download(resource_id=_download_id, views=_views, label=_url)
+                    pass
 
                 else:
                     # Check for resource and package match regex

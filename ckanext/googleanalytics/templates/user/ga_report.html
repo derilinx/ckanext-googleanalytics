@@ -3,48 +3,46 @@
 {% import 'macros/form.html' as form %}
 
 {% block primary_content_inner %}
-<div class="container">
-    <div class="row">
+    <div class="container">
+        <div class="row">
 
-    {% block ga_header %}
-        <h1>
-          Google Analytics Report
-        </h1>
-    {% endblock %}
+        {% block ga_header %}
+            <h1>
+              Google Analytics Report
+            </h1>
+        {% endblock %}
 
-    {% block ga_form %}
-        <form id="ga-report" class="dataset-form" method="post" action="{{ action }}" data-module="basic-form">
-            {{ form.input('from_dt', label=_('From Date'), type='date', value='', error=errors.from_dt,
-                classes=[], attrs={'class': 'form-control'}, is_required=true) }}
+        {% block ga_form %}
+            <form id="ga-report" class="dataset-form" method="post" action="{{ action }}" data-module="basic-form">
+                {{ form.input('from_dt', label=_('From Date'), type='date', value='', error=errors.from_dt,
+                    classes=[], attrs={'class': 'form-control'}, is_required=true) }}
+                {{ form.input('to_dt', label=_('To Date'), type='date', value='', error=errors.to_dt,
+                    classes=[], attrs={'class': 'form-control'}, is_required=true) }}
+                <button class="btn btn-primary" type="submit" name="run">{{ _("Generate Report") }}</button>
+            </form>
+        {% endblock %}
 
-            {{ form.input('to_dt', label=_('From Date'), type='date', value='', error=errors.to_dt,
-                classes=[], attrs={'class': 'form-control'}, is_required=true) }}
-
-            <button class="btn btn-primary" type="submit" name="run">{{ _("Generate Report") }}</button>
-
-        </form>
-    {% endblock %}
-
+        </div>
     </div>
-</div>
 
-{% if table_data %}
-    {% snippet 'user/snippets/ga_table.html', table_data=table_data %}
+    {% if table_data %}
+        {% snippet 'user/snippets/ga_table.html', table_data=table_data %}
 
-    {% block clear_form %}
-        <form id="ga-clear-data" class="dataset-form" method="post" action="{{ action }}" data-module="basic-form">
-            <button class="btn btn-warning" type="submit" name="clear">{{ _("Clear Data") }}</button>
-        </form>
-        <p class="empty">
-             Note: This will clear all (clears the ga reports db table) the previous generated reports for the current site.
-        </p>
-    {% endblock %}
+        {% block clear_form %}
+            <form id="ga-clear-data" class="dataset-form" method="post" action="{{ action }}" data-module="basic-form">
+                <button class="btn btn-warning" type="submit" name="clear">{{ _("Clear Data") }}</button>
+            </form>
+            <p class="empty">
+                 Note: This will clear all (clears the ga reports db table) the previous generated reports
+                for the current site.
+            </p>
+        {% endblock %}
 
-{% else %}
-   <h4 class="empty">
-     No recent runs. Please press Generate Report giving suitable start and end date to see the reports here.
-       Maximum allowed period is 6 months
-   </h4>
-{% endif %}
+    {% else %}
+       <h4 class="empty">
+         No recent runs. Please press Generate Report giving suitable start and end date to see the reports here.
+           Maximum allowed period is 6 months
+       </h4>
+    {% endif %}
 
 {% endblock %}

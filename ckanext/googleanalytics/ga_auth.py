@@ -5,6 +5,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 from pylons import config
 import json
+import logging
+
+log = logging.getLogger(__name__)
 
 NotFound = logic.NotFound
 
@@ -98,7 +101,7 @@ class GoogleAnalyticsCredentialsObject:
         :return: raises error
         """
         _file_name = config.get("googleanalytics.credential.file.name",
-                                "opendevelopmentmekong2-1533ebbee935.json")
+                                "opendevelopmentmekong2-6cd98ea6d5d9.json")
 
         file = "{}{}".format(self._default_path, _file_name)
         if not os.path.isfile(file):
