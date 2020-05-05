@@ -42,9 +42,10 @@ def ga_report_run(context, data_dict):
     # Initialise the GA service
     start_dt = data_dict.get('from_dt')
     end_dt = data_dict.get('to_dt')
+    site_code = data_dict.get('site_code')
 
     # run as background job
-    job = jobs.enqueue(run.run_ga, args=[start_dt, end_dt])
+    job = jobs.enqueue(run.run_ga, args=[start_dt, end_dt, site_code])
 
     log.info("Triggered a background job for Google Analytics")
     log.info("JOB ID: {}".format(job.id))
@@ -53,3 +54,7 @@ def ga_report_run(context, data_dict):
         "message": "Triggered the background job",
         "job_id": job.id
     }
+
+
+
+

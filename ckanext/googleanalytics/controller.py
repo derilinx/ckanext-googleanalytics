@@ -37,14 +37,10 @@ class GAReport(UserController):
         Any any error rollback the session.
         :return: Nothing
         """
-        _site_code = config.get('ckanext.odm.site_code', '')
         try:
-            pkg = model.Session.query(dbutil.GAReportPackage).filter(
-                dbutil.GAReportPackage.site_code == _site_code)
-            rsc = model.Session.query(dbutil.GAReportResource).filter(
-                dbutil.GAReportResource.site_code == _site_code)
-            evn = model.Session.query(dbutil.GAReportEvents).filter(
-                dbutil.GAReportEvents.site_code == _site_code)
+            pkg = model.Session.query(dbutil.GAReportPackage)
+            rsc = model.Session.query(dbutil.GAReportResource)
+            evn = model.Session.query(dbutil.GAReportEvents)
 
             pkg.delete(synchronize_session=False)
             rsc.delete(synchronize_session=False)
@@ -93,7 +89,8 @@ class GAReport(UserController):
             abort(403, _('Unauthorized to view or run this.'))
 
         if request.method == "GET":
-
+            vars['form_options'] = ga_h.get_ga_select_form_options()
+            vars['default_selected'] = config.get("ckanext.odm.site_code")
             return render('user/ga_report.html', extra_vars=vars)
 
         if request.method == "POST":
@@ -103,6 +100,7 @@ class GAReport(UserController):
             if "run" in _parms:
                 data_dict['from_dt'] = _parms.get('from_dt')
                 data_dict['to_dt'] = _parms.get('to_dt')
+                data_dict['site_code'] = _parms.get('site_code')
                 try:
                     res = ga_action.ga_report_run(context, data_dict)
                     h.flash_success(_('Background job has been triggered. '

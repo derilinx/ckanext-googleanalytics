@@ -36,13 +36,13 @@ class GoogleAnalyticsViews:
 
     # Define features for dataset
 
-    def __init__(self, config, start_date, end_date):
+    def __init__(self, config, start_date, end_date, site_code=None):
         self._request_id = str(uuid.uuid4())
         self._config = config
         self.start_date = start_date
         self.end_date = end_date
         self._update_views_containing_filters = False
-        self._site_code = self._config.get("ckanext.odm.site_code")
+        self._site_code = site_code or self._config.get("ckanext.odm.site_code")
         self._capture_download = self._config.get("ckanext.googleanalytics.capture_download", True)
         self.downloads = dict()
         self.dataset_views = dict()
@@ -70,6 +70,7 @@ class GoogleAnalyticsViews:
         """
         r = [
             "\nSUMMARY FOR THE GIVEN PERIOD : ",
+            "\nGiven Site code: {}".format(self._site_code),
             "\nCount of datasets: {}".format(len(self.dataset_views)),
             "\nCount of resources: {}".format(len(self.resource_views)),
             "\nCount of download resources from url: {}".format(len(self.downloads)),
@@ -80,9 +81,7 @@ class GoogleAnalyticsViews:
         return " ".join(r)
 
     def save_to_db(self, table_name=None, attribute_name=None):
-        print("*********")
-        print(table_name)
-        print(attribute_name)
+        log.info("Attribute name: {}".format(attribute_name))
         if table_name and attribute_name:
             if hasattr(self, attribute_name):
                 if attribute_name == "events":

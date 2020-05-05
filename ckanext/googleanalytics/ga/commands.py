@@ -101,7 +101,7 @@ def get_page_view_query_data(self, query_filter=None, from_date=None, to_date=No
         return results
 
 
-def ga_report(self, start_date=None, end_date=None):
+def ga_report(self, start_date=None, end_date=None, site_code=None):
 
         """
         Google Analytics report given from date and end date.
@@ -113,6 +113,7 @@ def ga_report(self, start_date=None, end_date=None):
         :param self: CKAN command instance
         :param start_date: str date
         :param end_date: str date
+        :param site_code: site_code
         :return:
         """
 
@@ -129,8 +130,9 @@ def ga_report(self, start_date=None, end_date=None):
         start_date = start_date.strftime("%Y-%m-%d")
         end_date = end_date.strftime("%Y-%m-%d")
 
+        log.info("Given Site Code: {}".format(site_code))
         # Initialise the parser
-        ga_views = stats.GoogleAnalyticsViews(self.CONFIG, start_date, end_date)
+        ga_views = stats.GoogleAnalyticsViews(self.CONFIG, start_date, end_date, site_code=site_code)
 
         # parse from all the page views of dataset types
         if DATASET_TYPES:

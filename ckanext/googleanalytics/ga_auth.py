@@ -39,7 +39,7 @@ def init_service(credentials_file):
     return build('analytics', 'v3', http=http)
 
 
-def get_profile_id(service):
+def get_profile_id(service, site_code=None):
     """
     Get the profile ID for this user and the service specified by the
     'googleanalytics.id' configuration option. This function iterates
@@ -52,8 +52,16 @@ def get_profile_id(service):
     if not accounts.get('items'):
         return None
 
-    accountName = config.get('googleanalytics.account')
-    webPropertyId = config.get('googleanalytics.id')
+    if not site_code:
+        accountName = config.get('googleanalytics.account')
+        webPropertyId = config.get('googleanalytics.id')
+    else:
+        accountName = config.get('googleanalytics.account_{}'.format(site_code))
+        webPropertyId = config.get('googleanalytics.id_{}'.format(site_code))
+
+    print("********************")
+    print(accountName)
+    print(webPropertyId)
     for acc in accounts.get('items'):
         if acc.get('name') == accountName:
             accountId = acc.get('id')
@@ -79,11 +87,12 @@ class GoogleAnalyticsCredentialsObject:
 
     _default_path = "/usr/lib/ckan/default/src/ckan/"
 
-    def __init__(self):
+    def __init__(self, site_code=None):
 
         self.service = None
         self.profile_id = None
         self.CONFIG = config
+        self._site_code = site_code or config.get("ckanext.odm.site_code")
         self._cred_file = self._get_file()
 
     def __repr__(self):
@@ -115,5 +124,5 @@ class GoogleAnalyticsCredentialsObject:
         :return:
         """
         self.service = init_service(self._cred_file)
-        self.profile_id = get_profile_id(self.service)
+        self.profile_id = get_profile_id(self.service, site_code=self._site_code)
 
