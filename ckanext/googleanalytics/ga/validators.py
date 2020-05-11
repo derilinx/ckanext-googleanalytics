@@ -77,11 +77,11 @@ def check_date_period(data_dict, errors, limit=184):
         errors['from_dt'] = ["From date greater than to date"]
         return errors
 
-    _period = (from_dt - to_dt).days
+    _period = (to_dt - from_dt).days
 
     if _period > limit:
-        errors['from_dt'] = ["Exceeded the limit"]
-        errors['to_dt'] = ["Exceeded the limit"]
+        errors['from_dt'] = ["Exceeded the limit - max limit is 6 months"]
+        errors['to_dt'] = ["Exceeded the limit - max limit is 6 months"]
         return errors
 
     return errors
