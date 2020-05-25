@@ -80,7 +80,10 @@ class GAReport(UserController):
             "user_dict": c.user_dict,
             "table_data": table_data,
             "errors": {},
-            "error_summary": {}
+            "error_summary": {},
+            'form_options': ga_h.get_ga_select_form_options(),
+            'default_selected': config.get("ckanext.odm.site_code"),
+            'data_dict': dict()
         }
 
         try:
@@ -89,8 +92,6 @@ class GAReport(UserController):
             abort(403, _('Unauthorized to view or run this.'))
 
         if request.method == "GET":
-            vars['form_options'] = ga_h.get_ga_select_form_options()
-            vars['default_selected'] = config.get("ckanext.odm.site_code")
             return render('user/ga_report.html', extra_vars=vars)
 
         if request.method == "POST":
@@ -113,6 +114,7 @@ class GAReport(UserController):
                 except logic.ValidationError as e:
                     vars["errors"] = e.error_dict
                     vars["error_summary"] = e.error_summary
+                    vars['data_dict'] = data_dict
                     h.flash_error(_("Form validation error. Please check the given dates"))
                     return render('user/ga_report.html', extra_vars=vars)
 
