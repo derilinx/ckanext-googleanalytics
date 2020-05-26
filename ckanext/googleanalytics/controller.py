@@ -17,6 +17,7 @@ from paste.util.multidict import MultiDict
 from ckan.controllers.api import ApiController
 from ckan.controllers.user import UserController
 from ckanext.googleanalytics import action as ga_action
+from datetime import datetime
 
 
 log = logging.getLogger('ckanext.googleanalytics')
@@ -92,6 +93,7 @@ class GAReport(UserController):
             abort(403, _('Unauthorized to view or run this.'))
 
         if request.method == "GET":
+            vars['data_dict']['to_dt'] = datetime.now().strftime('%Y-%m-%d')
             return render('user/ga_report.html', extra_vars=vars)
 
         if request.method == "POST":
