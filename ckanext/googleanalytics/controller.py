@@ -23,6 +23,7 @@ from datetime import datetime
 log = logging.getLogger('ckanext.googleanalytics')
 check_access = logic.check_access
 ValidationError = logic.ValidationError
+NotAuthorized = logic.NotAuthorized
 
 
 class GAReport(UserController):
@@ -88,9 +89,9 @@ class GAReport(UserController):
         }
 
         try:
-            check_access('user_update', context, data_dict)
+            check_access('sysadmin', context, data_dict)
         except NotAuthorized:
-            abort(403, _('Unauthorized to view or run this.'))
+            abort(403, _('Unauthorized to view or run this. Only sysadmin can run or view this'))
 
         if request.method == "GET":
             vars['data_dict']['to_dt'] = datetime.now().strftime('%Y-%m-%d')
