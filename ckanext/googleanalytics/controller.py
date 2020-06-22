@@ -154,12 +154,19 @@ class GAReport(UserController):
             abort(403, _('Unauthorized to view or run this.'))
         data = None
         fieldnames = None
+        _replace_labels = {
+            "metric_value": ""
+        }
+
         if action_name == "package_report":
             data, fieldnames = self._get_db_data(dbutil.GAReportPackage, run_id)
+            _replace_labels["metric_value"] = "dataset_view_count"
         elif action_name == "resource_report":
             data, fieldnames = self._get_db_data(dbutil.GAReportResource, run_id)
+            _replace_labels["metric_value"] = "resource_view_count"
         elif action_name == "event_report":
             data, fieldnames = self._get_db_data(dbutil.GAReportEvents, run_id)
+            _replace_labels["metric_value"] = "resource_download_count"
         else:
             abort(403, _('This should not occur.'))
 
@@ -167,7 +174,8 @@ class GAReport(UserController):
 
             file_object = StringIO.StringIO()
             try:
-                writer = csv.DictWriter(file_object, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
+                writer = csv.DictWriter(file_object, fieldnames=[_replace_labels.get(x, x) for x in fieldnames],
+                                        quoting=csv.QUOTE_ALL)
                 writer.writeheader()
 
                 # For each row in a data
@@ -175,7 +183,7 @@ class GAReport(UserController):
                     csv_dict = dict()
                     # For each column in a row
                     for _field in fieldnames:
-                        csv_dict[_field] = getattr(row, _field)
+                        csv_dict[_replace_labels.get(_field, _field)] = getattr(row, _field)
 
                     # Write to csv
                     writer.writerow(csv_dict)
@@ -186,10 +194,13 @@ class GAReport(UserController):
                 result = file_object.getvalue()
                 file_object.close()
 
-            file_name = "{}_{}".format(run_id, action_name)
-            p.toolkit.response.headers['Content-type'] = 'text/csv'
-            p.toolkit.response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
-            return result
+            if result:
+                file_name = "{}_{}".format(run_id, action_name)
+                p.toolkit.response.headers['Content-type'] = 'text/csv'
+                p.toolkit.response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
+                return result
+            else:
+                h.flash_success(_("The download event is empty for the given period"))
 
         # If not data availabel. This should not occur.
         report_page = h.url_for(controller='ckanext.googleanalytics.controller:GAReport', action='report', id=id)
