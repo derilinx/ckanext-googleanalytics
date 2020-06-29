@@ -18,6 +18,7 @@ def _run_ga(st_dt, ed_dt, site_code):
         ga_report(service, start_date=st_dt, end_date=ed_dt, site_code=site_code)
     except Exception as e:
         # ODC GA credentials not working
+        log.error(e)
         log.error("Error for fetching GA data for site: {}".format(site_code))
         pass
 
