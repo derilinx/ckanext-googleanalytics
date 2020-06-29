@@ -83,7 +83,7 @@ def get_page_view_query_data(self, query_filter=None, from_date=None, to_date=No
         if isinstance(to_date, datetime.date):
             to_date = to_date.strftime("%Y-%m-%d")
         if not metrics:
-            metrics = 'ga:visits,ga:visitors,ga:newVisits,ga:uniquePageviews'
+            metrics = 'ga:visits,ga:visitors,ga:newVisits,ga:pageviews,ga:uniquePageviews'
         if not sort:
             sort = '-ga:uniquePageviews'
 

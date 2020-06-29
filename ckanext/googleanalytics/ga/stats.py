@@ -148,7 +148,8 @@ class GoogleAnalyticsViews:
                 self.resource_views[resource_id]['visits'] += int(views[0])
                 self.resource_views[resource_id]['visitors'] += int(views[1])
                 self.resource_views[resource_id]['new_visits'] += int(views[2])
-                self.resource_views[resource_id]['unique_pageviews'] += int(views[3])
+                self.resource_views[resource_id]['pageviews'] += int(views[3])
+                self.resource_views[resource_id]['unique_pageviews'] += int(views[4])
             else:
 
                 # Note: Any additional field is to be added in extras
@@ -162,8 +163,9 @@ class GoogleAnalyticsViews:
                     'resource_title': rsc.name or rsc.id,
                     'visits': int(views[0]),
                     'visitors': int(views[1]),
-                    'new_visits': int(views[1]),
-                    'unique_pageviews': int(views[3]),
+                    'new_visits': int(views[2]),
+                    'pageviews': int(views[3]),
+                    'unique_pageviews': int(views[4]),
                     "state": rsc.state
                 }
         else:
@@ -185,7 +187,8 @@ class GoogleAnalyticsViews:
                 self.dataset_views[dataset_id]['visits'] += int(views[0])
                 self.dataset_views[dataset_id]['visitors'] += int(views[1])
                 self.dataset_views[dataset_id]['new_visits'] += int(views[2])
-                self.dataset_views[dataset_id]['unique_pageviews'] += int(views[3])
+                self.dataset_views[dataset_id]['pageviews'] += int(views[3])
+                self.dataset_views[dataset_id]['unique_pageviews'] += int(views[4])
             else:
 
                 # Note: Any additional field is to be added in extras
@@ -199,8 +202,9 @@ class GoogleAnalyticsViews:
                     "package_title": pkg.title or pkg.name,
                     'visits': int(views[0]),
                     'visitors': int(views[1]),
-                    'new_visits': int(views[1]),
-                    'unique_pageviews': int(views[3]),
+                    'new_visits': int(views[2]),
+                    'pageviews': int(views[3]),
+                    'unique_pageviews': int(views[4]),
                     'type': pkg.type,
                     'private': pkg.private,
                     'state': pkg.state
