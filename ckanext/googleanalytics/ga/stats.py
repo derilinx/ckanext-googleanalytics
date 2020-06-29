@@ -145,7 +145,10 @@ class GoogleAnalyticsViews:
         if rsc:
             resource_id = rsc.id
             if resource_id in self.resource_views:
-                self.resource_views[resource_id]['metric_value'] += int(views)
+                self.resource_views[resource_id]['visits'] += int(views[0])
+                self.resource_views[resource_id]['visitors'] += int(views[1])
+                self.resource_views[resource_id]['new_visits'] += int(views[2])
+                self.resource_views[resource_id]['unique_pageviews'] += int(views[3])
             else:
 
                 # Note: Any additional field is to be added in extras
@@ -157,7 +160,10 @@ class GoogleAnalyticsViews:
                     'label': label,
                     'resource_id': resource_id,
                     'resource_title': rsc.name or rsc.id,
-                    'metric_value': int(views),
+                    'visits': int(views[0]),
+                    'visitors': int(views[1]),
+                    'new_visits': int(views[1]),
+                    'unique_pageviews': int(views[3]),
                     "state": rsc.state
                 }
         else:
@@ -176,7 +182,10 @@ class GoogleAnalyticsViews:
         if pkg:
             dataset_id = pkg.id
             if dataset_id in self.dataset_views:
-                self.dataset_views[dataset_id]['metric_value'] += int(views)
+                self.dataset_views[dataset_id]['visits'] += int(views[0])
+                self.dataset_views[dataset_id]['visitors'] += int(views[1])
+                self.dataset_views[dataset_id]['new_visits'] += int(views[2])
+                self.dataset_views[dataset_id]['unique_pageviews'] += int(views[3])
             else:
 
                 # Note: Any additional field is to be added in extras
@@ -188,7 +197,10 @@ class GoogleAnalyticsViews:
                     'label': label,
                     'package_id': dataset_id,
                     "package_title": pkg.title or pkg.name,
-                    'metric_value': int(views),
+                    'visits': int(views[0]),
+                    'visitors': int(views[1]),
+                    'new_visits': int(views[1]),
+                    'unique_pageviews': int(views[3]),
                     'type': pkg.type,
                     'private': pkg.private,
                     'state': pkg.state
@@ -221,7 +233,10 @@ class GoogleAnalyticsViews:
                     'label': label,
                     'resource_id': resource_id,
                     'resource_title': rsc.name or rsc.id,
-                    'metric_value': int(views),
+                    'visits': int(views[0]),
+                    'visitors': int(views[1]),
+                    'newVisits': int(views[1]),
+                    'uniquePageviews': int(views[3]),
                     "state": rsc.state
                 }
         else:
@@ -315,7 +330,7 @@ class GoogleAnalyticsViews:
             url_object = requests.utils.urlparse(_url)
             _url_query = url_object.query
             _url_path = url_object.path
-            _views = _item[1]
+            _views = _item[1:]
 
             if not validators.check_resource_views_filters(_url_query):
 
