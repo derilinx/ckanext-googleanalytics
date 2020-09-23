@@ -1,13 +1,17 @@
+from __future__ import absolute_import
+from builtins import str
 import logging
 import csv
-import StringIO
-from ckan.lib.base import BaseController, render, abort
-import dbutil
+import io
+
 import ckan.model as model
+from ckan.plugins import toolkit
+from ckan.lib.base import BaseController, c, render, request, abort
+from . import dbutil
+
 import ckan.logic as logic
 import hashlib
-import plugin
-import ckan.plugins as p
+from . import plugin
 from pylons import config
 from ckanext.googleanalytics import dbutil
 from ckanext.googleanalytics import helper as ga_h
@@ -172,7 +176,7 @@ class GAReport(UserController):
 
         if data and fieldnames:
 
-            file_object = StringIO.StringIO()
+            file_object = io.StringIO()
             try:
                 writer = csv.DictWriter(file_object, fieldnames=[_replace_labels.get(x, x) for x in fieldnames],
                                         quoting=csv.QUOTE_ALL)
@@ -196,8 +200,8 @@ class GAReport(UserController):
 
             if result:
                 file_name = "{}_{}".format(run_id, action_name)
-                p.toolkit.response.headers['Content-type'] = 'text/csv'
-                p.toolkit.response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
+                toolkit.response.headers['Content-type'] = 'text/csv'
+                toolkit.response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
                 return result
             else:
                 h.flash_success(_("The download event is empty for the given period"))
@@ -212,25 +216,26 @@ class GAController(BaseController):
     def view(self):
         # get package objects corresponding to popular GA content
         c.top_resources = dbutil.get_top_resources(limit=10)
-        return render('summary.html')
+        return render("summary.html")
 
 
 class GAApiController(ApiController):
     # intercept API calls to record via google analytics
     def _post_analytics(
-            self, user, request_obj_type, request_function, request_id):
-        if config.get('googleanalytics.id'):
+        self, user, request_obj_type, request_function, request_id
+    ):
+        if config.get("googleanalytics.id"):
             data_dict = {
                 "v": 1,
-                "tid": config.get('googleanalytics.id'),
+                "tid": config.get("googleanalytics.id"),
                 "cid": hashlib.md5(user).hexdigest(),
                 # customer id should be obfuscated
                 "t": "event",
-                "dh": c.environ['HTTP_HOST'],
-                "dp": c.environ['PATH_INFO'],
-                "dr": c.environ.get('HTTP_REFERER', ''),
+                "dh": c.environ["HTTP_HOST"],
+                "dp": c.environ["PATH_INFO"],
+                "dr": c.environ.get("HTTP_REFERER", ""),
                 "ec": "CKAN API Request",
-                "ea": request_obj_type+request_function,
+                "ea": request_obj_type + request_function,
                 "el": request_id,
             }
             plugin.GoogleAnalyticsPlugin.analytics_queue.put(data_dict)
@@ -238,67 +243,73 @@ class GAApiController(ApiController):
     def action(self, logic_function, ver=None):
         try:
             function = logic.get_action(logic_function)
-            side_effect_free = getattr(function, 'side_effect_free', False)
+            side_effect_free = getattr(function, "side_effect_free", False)
             request_data = self._get_request_data(
-                try_url_params=side_effect_free)
+                try_url_params=side_effect_free
+            )
             if isinstance(request_data, dict):
-                id = request_data.get('id', '')
-                if 'q' in request_data:
-                    id = request_data['q']
-                if 'query' in request_data:
-                    id = request_data['query']
-                self._post_analytics(c.user, logic_function, '', id)
-        except Exception, e:
+                id = request_data.get("id", "")
+                if "q" in request_data:
+                    id = request_data["q"]
+                if "query" in request_data:
+                    id = request_data["query"]
+                self._post_analytics(c.user, logic_function, "", id)
+        except Exception as e:
             log.debug(e)
             pass
-
         return ApiController.action(self, logic_function, ver)
 
-    def list(self, ver=None, register=None,
-             subregister=None, id=None):
-        self._post_analytics(c.user,
-                             register +
-                             ("_"+str(subregister) if subregister else ""),
-                             "list",
-                             id)
+    def list(self, ver=None, register=None, subregister=None, id=None):
+        self._post_analytics(
+            c.user,
+            register + ("_" + str(subregister) if subregister else ""),
+            "list",
+            id,
+        )
         return ApiController.list(self, ver, register, subregister, id)
 
-    def show(self, ver=None, register=None,
-             subregister=None, id=None, id2=None):
-        self._post_analytics(c.user,
-                             register +
-                             ("_"+str(subregister) if subregister else ""),
-                             "show",
-                             id)
+    def show(
+        self, ver=None, register=None, subregister=None, id=None, id2=None
+    ):
+        self._post_analytics(
+            c.user,
+            register + ("_" + str(subregister) if subregister else ""),
+            "show",
+            id,
+        )
         return ApiController.show(self, ver, register, subregister, id, id2)
 
-    def update(self, ver=None, register=None,
-               subregister=None, id=None, id2=None):
-        self._post_analytics(c.user,
-                             register +
-                             ("_"+str(subregister) if subregister else ""),
-                             "update",
-                             id)
+    def update(
+        self, ver=None, register=None, subregister=None, id=None, id2=None
+    ):
+        self._post_analytics(
+            c.user,
+            register + ("_" + str(subregister) if subregister else ""),
+            "update",
+            id,
+        )
         return ApiController.update(self, ver, register, subregister, id, id2)
 
-    def delete(self, ver=None, register=None,
-               subregister=None, id=None, id2=None):
-        self._post_analytics(c.user,
-                             register +
-                             ("_"+str(subregister) if subregister else ""),
-                             "delete",
-                             id)
+    def delete(
+        self, ver=None, register=None, subregister=None, id=None, id2=None
+    ):
+        self._post_analytics(
+            c.user,
+            register + ("_" + str(subregister) if subregister else ""),
+            "delete",
+            id,
+        )
         return ApiController.delete(self, ver, register, subregister, id, id2)
 
     def search(self, ver=None, register=None):
         id = None
         try:
             params = MultiDict(self._get_search_params(request.params))
-            if 'q' in params.keys():
-                id = params['q']
-            if 'query' in params.keys():
-                id = params['query']
-        except ValueError, e:
+            if "q" in list(params.keys()):
+                id = params["q"]
+            if "query" in list(params.keys()):
+                id = params["query"]
+        except ValueError as e:
             log.debug(str(e))
             pass
         self._post_analytics(c.user, register, "search", id)
