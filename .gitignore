@@ -8,3 +8,7 @@ build/
 dist/
 credentials.json
 token.dat
+*.orig
+*.rej
+\#*\#
+.\#*
