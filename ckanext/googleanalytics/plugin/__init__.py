@@ -9,6 +9,7 @@ import threading
 from builtins import str, range
 
 import requests
+import json
 
 import ckan.lib.helpers as h
 import ckan.plugins as p
@@ -151,11 +152,39 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
 
         """
 
+        config = {'anonymizeIp': True,
+                  'debug_mode': True }
+
         if self.enable_user_id and tk.c.user:
-            self.googleanalytics_fields["userId"] = str(tk.c.userobj.id)
+            config['user_id'] = str(tk.c.userobj.id)
+
+        #
+        # custom OGCIO dimensions:
+        #
+        user_properties = { 'user_type': 'public' }
+        custom_data = {}
+
+        if tk.c.is_psb_user:
+            user_properties['user_type'] = 'psb'
+        elif tk.c.userobj and tk.c.userobj.sysadmin:
+            user_properties['user_type'] = 'admin'
+        elif tk.c.userobj:
+            user_properties['user_type'] = 'psbadmin'
+
+        pkg_dict = getattr(tk.c, 'pkg_dict', {})
+        log.debug('ga_header: pkg_dict: %s', pkg_dict)
+        if pkg_dict.get('organization'):
+            config['org'] = pkg_dict['organization']['name']
+            config['dataset'] = pkg_dict['name']
+
+        # end custom dimensions
 
         data = {
             "googleanalytics_id": self.googleanalytics_id,
+            "googleanalytics_config": json.dumps(config),
+            #"googleanalytics_custom_data": custom_data and json.dumps(custom_data) or "",
+            "googleanalytics_user_properties": json.dumps(user_properties),
+            #### undone -- these aren't ported to GTM yet
             "googleanalytics_domain": self.googleanalytics_domain,
             "googleanalytics_fields": str(self.googleanalytics_fields),
             "googleanalytics_linked_domains": self.googleanalytics_linked_domains,
