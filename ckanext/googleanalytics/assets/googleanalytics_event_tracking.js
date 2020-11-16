@@ -22,7 +22,7 @@ this.ckan.module("google-analytics", function(jQuery, _) {
       });
 
       jQuery(".dataset-resource-text a:eq(1)").on("click", function() {
-        var resource_url = encodeURIComponent(jQuery(this).prop('href');
+        var resource_url = encodeURIComponent(jQuery(this).prop('href'));
         if (resource_url) {
           ga('send', 'event', 'Resource', 'CKAN_Resource_view', resource_url);
         }
