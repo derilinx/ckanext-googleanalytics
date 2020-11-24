@@ -67,6 +67,26 @@ def load(credentials, start_date):
         log.info("Saved %s records from google" % len(packages_data))
 
 
+@googleanalytics.command(short_help=u"Generate Report from Google Analytics API")
+@click.argument("credentials", type=click.Path(exists=True))
+@click.option("-s", "--start-date", required=True)
+@click.option("-e", "--end-date", required=True)
+def report(credentials, start_date, end_date):
+    """Parse data from Google Analytics API and store it
+    in a local database
+    """
+    from .ga_auth import init_service, get_profile_id
+    from .ga import commands
+
+    try:
+        service = init_service(credentials)
+    except TypeError as e:
+        raise Exception("Unable to create a service: {0}".format(e))
+    profile_id = get_profile_id(service)
+
+    commands.ga_report(service, profile_id, start_date=start_date, end_date=end_date)
+
+
 def _resource_url_tag():
     return tk.config.get(
         "googleanalytics_resource_prefix", DEFAULT_RESOURCE_URL_TAG
