@@ -19,6 +19,18 @@ DEFAULT_RESOURCE_URL_TAG = "/downloads/"
 RESOURCE_URL_REGEX = re.compile("/dataset/[a-z0-9-_]+/resource/([a-z0-9-_]+)")
 DATASET_EDIT_REGEX = re.compile("/dataset/edit/([a-z0-9-_]+)")
 
+try:
+    from ckanext import odm_profile
+    LIBRARY_URL = '/library_record/'
+    LAWS_URL = '/laws_record/'
+    AGREEMENT_URL = '/agreement/'
+    MAPS = "/maps/"
+    PROFILES = "/profile/"
+
+    URL_MAP = [PACKAGE_URL, LIBRARY_URL, LAWS_URL, AGREEMENT_URL, MAPS, PROFILES]
+except ImportError:
+    URL_MAP = [PACKAGE_URL]
+
 
 def get_commands():
     return [
@@ -346,7 +358,7 @@ def get_ga_data(service, profile_id, query_filter):
     recent_date = recent_date.strftime("%Y-%m-%d")
     floor_date = datetime.date(2005, 1, 1)
     packages = {}
-    queries = ["ga:pagePath=~%s" % PACKAGE_URL]
+    queries = ["ga:pagePath=~%s" % _url for _url in URL_MAP] # patched
     dates = {"recent": recent_date, "ever": floor_date}
     for date_name, date in list(dates.items()):
         for query in queries:
