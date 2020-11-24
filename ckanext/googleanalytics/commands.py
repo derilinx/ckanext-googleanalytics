@@ -111,7 +111,8 @@ class LoadAnalytics(CkanCommand):
             try:
                 start_date = self.args[2]
                 end_date = self.args[3]
-                commands.ga_report(self, start_date=start_date, end_date=end_date)
+                commands.ga_report(self.service, self.profile_id,
+                                   start_date=start_date, end_date=end_date)
             except IndexError:
                 raise Exception("From date and to date is missing")
 

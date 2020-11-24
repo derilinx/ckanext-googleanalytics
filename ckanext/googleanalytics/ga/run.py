@@ -1,9 +1,13 @@
-from ckanext.googleanalytics.ga_auth import GoogleAnalyticsCredentialsObject
-from ckanext.googleanalytics.ga.commands import ga_report
+from ..ga_auth import GoogleAnalyticsCredentialsObject
+from . import commands
 from ckanext.googleanalytics import helper as ga_h
 import logging
 
 log = logging.getLogger(__name__)
+
+#
+# ODM Specific bits to run the GA reports for all of the site codes.
+#
 
 
 def _run_ga(st_dt, ed_dt, site_code):
@@ -13,9 +17,10 @@ def _run_ga(st_dt, ed_dt, site_code):
     """
     try:
         log.info("Running GA report for site: {}".format(site_code))
-        service = GoogleAnalyticsCredentialsObject(site_code=site_code)
-        service()
-        ga_report(service, start_date=st_dt, end_date=ed_dt, site_code=site_code)
+        creds = GoogleAnalyticsCredentialsObject(site_code=site_code)
+        creds()
+        commands.ga_report(creds.service, creds.profile_id,
+                           start_date=st_dt, end_date=ed_dt, site_code=site_code)
     except Exception as e:
         # ODC GA credentials not working
         log.error(e)

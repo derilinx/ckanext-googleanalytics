@@ -4,6 +4,8 @@ from ckanext.googleanalytics.ga import stats
 import datetime
 import re
 
+from ckan.plugins import toolkit
+
 import logging
 
 log = logging.getLogger(__name__)
@@ -22,12 +24,13 @@ EVENT_CATEGORIES_ACTION = "Resource:Download"
 DATASET_TYPES = "dataset laws_record agreement library_record map profile"
 
 
-def get_data_for_events(self, event_category, event_action, from_date=None, to_date=None,
+def get_data_for_events(service, profile_id, event_category, event_action, from_date=None, to_date=None,
                         start_index=1, max_results=10000, metrics=None, dimensions=None):
     """
     Gets the event data given category and action
 
-    :param self: CKAN command instance
+    :param service: Google OATH Service
+    :param profile_id: Google Profile Id
     :param event_category: str category
     :param event_action: str action
     :param from_date: str date
@@ -47,24 +50,25 @@ def get_data_for_events(self, event_category, event_action, from_date=None, to_d
 
     query = 'ga:eventCategory=={};ga:eventAction=={}'.format(event_category, event_action)
 
-    result = self.service.data().ga().get(ids='ga:%s' % self.profile_id,
-                                          filters=query,
-                                          dimensions=dimensions,
-                                          metrics=metrics,
-                                          start_date=from_date,
-                                          start_index=start_index,
-                                          max_results=max_results,
-                                          end_date=to_date).execute()
+    result = service.data().ga().get(ids='ga:%s' % profile_id,
+                                     filters=query,
+                                     dimensions=dimensions,
+                                     metrics=metrics,
+                                     start_date=from_date,
+                                     start_index=start_index,
+                                     max_results=max_results,
+                                     end_date=to_date).execute()
 
     return result
 
 
-def get_page_view_query_data(self, query_filter=None, from_date=None, to_date=None,
+def get_page_view_query_data(service, profile_id, query_filter=None, from_date=None, to_date=None,
                              start_index=1, max_results=10000, metrics=None, sort=None):
         """
         Gets all unique page views and corresponding dimensions
 
-        :param self: CKAN command instance
+        :param service: Google OATH Service
+        :param profile_id: Google Profile Id
         :param query_filter: str GA query
         :param from_date: str date
         :param to_date: str date
@@ -87,21 +91,21 @@ def get_page_view_query_data(self, query_filter=None, from_date=None, to_date=No
         if not sort:
             sort = '-ga:uniquePageviews'
 
-        print '%s -> %s' % (from_date, to_date)
+        print ('%s -> %s' % (from_date, to_date))
 
-        results = self.service.data().ga().get(ids='ga:%s' % self.profile_id,
-                                               filters=query_filter,
-                                               dimensions='ga:pagePath',
-                                               start_date=from_date,
-                                               start_index=start_index,
-                                               max_results=max_results,
-                                               metrics=metrics,
-                                               sort=sort,
-                                               end_date=to_date).execute()
+        results = service.data().ga().get(ids='ga:%s' % profile_id,
+                                          filters=query_filter,
+                                          dimensions='ga:pagePath',
+                                          start_date=from_date,
+                                          start_index=start_index,
+                                          max_results=max_results,
+                                          metrics=metrics,
+                                          sort=sort,
+                                          end_date=to_date).execute()
         return results
 
 
-def ga_report(self, start_date=None, end_date=None, site_code=None):
+def ga_report(service, profile_id, start_date=None, end_date=None, site_code=None):
 
         """
         Google Analytics report given from date and end date.
@@ -110,7 +114,8 @@ def ga_report(self, start_date=None, end_date=None, site_code=None):
             - Get visits to dataset page, resource page
             - Get CKAN resource downloads stats
 
-        :param self: CKAN command instance
+        :param service: Google OATH Service
+        :param profile_id: Google Profile Id
         :param start_date: str date
         :param end_date: str date
         :param site_code: site_code
@@ -132,7 +137,7 @@ def ga_report(self, start_date=None, end_date=None, site_code=None):
 
         log.info("Given Site Code: {}".format(site_code))
         # Initialise the parser
-        ga_views = stats.GoogleAnalyticsViews(self.CONFIG, start_date, end_date, site_code=site_code)
+        ga_views = stats.GoogleAnalyticsViews(toolkit.config, start_date, end_date, site_code=site_code)
 
         # parse from all the page views of dataset types
         if DATASET_TYPES:
@@ -147,7 +152,7 @@ def ga_report(self, start_date=None, end_date=None, site_code=None):
             log.info("Gathering data for data type: {}".format(_type))
             _ga_path = "/{}/".format(_type.strip())
             _query = 'ga:pagePath=~{}'.format(_ga_path)
-            ga_dt_res = get_page_view_query_data(self, _query, from_date=start_date, to_date=end_date)
+            ga_dt_res = get_page_view_query_data(service, profile_id, _query, from_date=start_date, to_date=end_date)
 
             log.info("processing data for data type :{}".format(_type))
             # call the dataset/resource views parser
@@ -166,7 +171,7 @@ def ga_report(self, start_date=None, end_date=None, site_code=None):
             # Loop over all the events
             for _event in events:
                 _category, _action = _event.strip().split(":")
-                ga_evt_res = get_data_for_events(self, _category, _action, from_date=start_date, to_date=end_date)
+                ga_evt_res = get_data_for_events(service, profile_id, _category, _action, from_date=start_date, to_date=end_date)
                 if _action.lower() == "download":
                     # Currently supports download event
                     # Call the events parser
