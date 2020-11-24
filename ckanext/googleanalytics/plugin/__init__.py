@@ -158,6 +158,7 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
         if self.enable_user_id and tk.c.user:
             config['user_id'] = str(tk.c.userobj.id)
 
+        IS_GA4 = False
         #
         # custom OGCIO dimensions:
         #
@@ -177,13 +178,22 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
             config['org'] = pkg_dict['organization']['name']
             config['dataset'] = pkg_dict['name']
 
+        if IS_GA4:
+            config['user_properties'] = user_properties
+        else:
+            config['custom_map'] = {
+                'dimension1': 'org',
+                'dimension2': 'dataset',
+                'dimension3': 'user_type',
+                }
+            config.update(user_properties)
+
         # end custom dimensions
 
         data = {
+            "ga4": IS_GA4,
             "googleanalytics_id": self.googleanalytics_id,
             "googleanalytics_config": json.dumps(config),
-            #"googleanalytics_custom_data": custom_data and json.dumps(custom_data) or "",
-            "googleanalytics_user_properties": json.dumps(user_properties),
             #### undone -- these aren't ported to GTM yet
             "googleanalytics_domain": self.googleanalytics_domain,
             "googleanalytics_fields": str(self.googleanalytics_fields),
