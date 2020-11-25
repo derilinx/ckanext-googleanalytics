@@ -153,7 +153,8 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
         """
 
         config = {'anonymizeIp': True,
-                  'debug_mode': True }
+                  'debug_mode': True,
+        }
 
         if self.enable_user_id and tk.c.user:
             config['user_id'] = str(tk.c.userobj.id)
@@ -174,7 +175,7 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
 
         pkg_dict = getattr(tk.c, 'pkg_dict', {})
         log.debug('ga_header: pkg_dict: %s', pkg_dict)
-        if pkg_dict.get('organization'):
+        if pkg_dict and pkg_dict.get('organization'):
             config['org'] = pkg_dict['organization']['name']
             config['dataset'] = pkg_dict['name']
 
@@ -192,9 +193,10 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
 
         data = {
             "ga4": IS_GA4,
+            "gtm": True,
             "googleanalytics_id": self.googleanalytics_id,
             "googleanalytics_config": json.dumps(config),
-            #### undone -- these aren't ported to GTM yet
+            #### undone -- these aren't ported to GTM yet, use gtm=False
             "googleanalytics_domain": self.googleanalytics_domain,
             "googleanalytics_fields": str(self.googleanalytics_fields),
             "googleanalytics_linked_domains": self.googleanalytics_linked_domains,
