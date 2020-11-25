@@ -88,8 +88,8 @@ class GAMixinPlugin(plugins.SingletonPlugin):
 
         ga_controller = 'ckanext.googleanalytics.controller:GAReport'
         with SubMapper(map, controller=ga_controller) as m:
-            m.connect('ga_report', '/user/{id}/report', action='report')
-            m.connect('download_report', '/user/{id}/download_report/{run_id}/{action_name}', action='download')
+            m.connect('googleanalytics.report', '/user/{id}/report', action='report')
+            m.connect('googleanalytics.download_report', '/user/{id}/download_report/{run_id}/{action_name}', action='download')
 
         return map
 

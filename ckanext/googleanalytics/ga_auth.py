@@ -18,6 +18,9 @@ except CkanVersionException:
 else:
     config = tk.config
 
+import logging
+log = logging.getLogger(__file__)
+
 def _prepare_credentials(credentials_filename):
     """
     Either returns the user's oauth credentials or uses the credentials
@@ -86,6 +89,7 @@ def get_profile_id(service, site_code=None):
             if profiles.get("items"):
                 return profiles.get("items")[0].get("id")
 
+        log.error("get_profile_id: Didn't find the account name")
     return None
 
 

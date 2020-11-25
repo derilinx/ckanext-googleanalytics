@@ -10,6 +10,7 @@ import ckan.logic as logic
 import ckan.plugins.toolkit as tk
 import ckan.views.api as api
 import ckan.views.resource as resource
+from . import reports
 
 from ckan.common import g
 
@@ -89,3 +90,7 @@ def _post_analytics(
             "el": request_id,
         }
         GoogleAnalyticsPlugin.analytics_queue.put(data_dict)
+
+
+ga.add_url_rule("/user/<id>/report", "report", view_func=reports.report)
+ga.add_url_rule('/user/<id>/download_report/<run_id>/<action_name>', "report_download", view_func=reports.download)

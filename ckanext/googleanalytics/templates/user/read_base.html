@@ -4,7 +4,7 @@
   {{ super() }}
 
     {% if h.check_access('sysadmin') %}
-        {{ h.build_nav_icon('ga_report', _('GA Report'), id=user.name, icon='clock-o') }}
+        {{ h.build_nav_icon('google_analytics.report', _('GA Report'), id=user.name, icon='clock-o') }}
     {% endif %}
 
 {% endblock %}

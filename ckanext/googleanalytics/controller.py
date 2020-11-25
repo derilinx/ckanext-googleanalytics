@@ -23,6 +23,7 @@ from ckan.controllers.user import UserController
 from ckanext.googleanalytics import action as ga_action
 from datetime import datetime
 
+from . import reports
 
 log = logging.getLogger('ckanext.googleanalytics')
 check_access = logic.check_access
@@ -134,82 +135,7 @@ class GAReport(UserController):
             h.redirect_to(report_page)
 
     def download(self, id=None, run_id=None, action_name=None):
-        """
-        Download the file object given run id and action
-        :param run_id: run id
-        :param action_name: str package_report/resource_report/event_report
-        :return: download object
-        """
-        context = {
-            'model': model, 'session': model.Session,
-            'user': c.user, 'auth_user_obj': c.userobj,
-            'for_view': True
-        }
-        data_dict = {
-            'id': id,
-            'user_obj': c.userobj,
-            'include_datasets': True,
-            'include_num_followers': True
-        }
-
-        try:
-            check_access('user_update', context, data_dict)
-        except NotAuthorized:
-            abort(403, _('Unauthorized to view or run this.'))
-        data = None
-        fieldnames = None
-        _replace_labels = {
-            "metric_value": ""
-        }
-
-        if action_name == "package_report":
-            data, fieldnames = self._get_db_data(dbutil.GAReportPackage, run_id)
-            _replace_labels["metric_value"] = "dataset_view_count"
-        elif action_name == "resource_report":
-            data, fieldnames = self._get_db_data(dbutil.GAReportResource, run_id)
-            _replace_labels["metric_value"] = "resource_view_count"
-        elif action_name == "event_report":
-            data, fieldnames = self._get_db_data(dbutil.GAReportEvents, run_id)
-            _replace_labels["metric_value"] = "resource_download_count"
-        else:
-            abort(403, _('This should not occur.'))
-
-        if data and fieldnames:
-
-            file_object = io.StringIO()
-            try:
-                writer = csv.DictWriter(file_object, fieldnames=[_replace_labels.get(x, x) for x in fieldnames],
-                                        quoting=csv.QUOTE_ALL)
-                writer.writeheader()
-
-                # For each row in a data
-                for row in data:
-                    csv_dict = dict()
-                    # For each column in a row
-                    for _field in fieldnames:
-                        csv_dict[_replace_labels.get(_field, _field)] = getattr(row, _field)
-
-                    # Write to csv
-                    writer.writerow(csv_dict)
-            except Exception as e:
-                log.error(e)
-                pass
-            finally:
-                result = file_object.getvalue()
-                file_object.close()
-
-            if result:
-                file_name = "{}_{}".format(run_id, action_name)
-                toolkit.response.headers['Content-type'] = 'text/csv'
-                toolkit.response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
-                return result
-            else:
-                h.flash_success(_("The download event is empty for the given period"))
-
-        # If not data availabel. This should not occur.
-        report_page = h.url_for(controller='ckanext.googleanalytics.controller:GAReport', action='report', id=id)
-        h.redirect_to(report_page)
-
+        return reports.download(id, run_id, action_name)
 
 class GAController(BaseController):
 
