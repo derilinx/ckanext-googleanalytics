@@ -115,10 +115,9 @@ def internal_save(packages_data, summary_date):
     # clear out existing data before adding new
     sql = (
         """DELETE FROM tracking_summary
-             WHERE tracking_date='%s'; """
-        % summary_date
+             WHERE tracking_date=%s; """
     )
-    engine.execute(sql)
+    engine.execute(sql, summary_date)
 
     for url, count in list(packages_data.items()):
         # If it matches the resource then we should mark it as a resource.
