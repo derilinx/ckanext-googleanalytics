@@ -19,9 +19,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'gdata>=2.0.0',
-        'google-api-python-client>=1.6.1, <1.7.0',
-        'pyOpenSSL>=16.2.0',
+        'google-api-python-client>=1.12, <1.13',
         'oauth2client==4.1.3'
     ],
     entry_points="""
