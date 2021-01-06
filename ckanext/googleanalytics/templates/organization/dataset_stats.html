@@ -1,0 +1,18 @@
+{% extends "organization/read_base.html" %}
+
+{% block primary_content_inner %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Dataset</th>
+        <th>Recent Views (2 weeks)</th>
+        <th>Total Views (alltime)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dataset in datasets %}
+        {% snippet "organization/snippets/dataset_stat_item.html", dataset=dataset %}
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

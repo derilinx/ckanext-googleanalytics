@@ -1,0 +1,9 @@
+{# snippet:
+        {% snippet "organization/snippets/dataset_stat_item.html" dataset=dataset %}
+#}
+
+<tr>
+  <td>{% link_for dataset.title, named_route="dataset.read", id=dataset.name %}</td>
+  <td>{{ dataset.visits_recently }}</td>
+  <td>{{ dataset.visits_ever }}</td>
+</tr>

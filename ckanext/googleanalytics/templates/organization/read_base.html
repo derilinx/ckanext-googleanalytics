@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+{% block content_primary_nav %}
+  {{ super() }}
+  {% if h.check_access('organization_update', {'id': group_dict.id}) %}
+    {{ h.build_nav_icon("google_analytics.org_dataset_stats", _('Statistics'), id=group_dict.name, icon='info-circle') }}
+  {% endif %}
+{% endblock %}

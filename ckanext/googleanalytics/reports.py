@@ -205,3 +205,44 @@ def download(id=None, run_id=None, action_name=None):
     # If not data available. This should not occur.
     report_page = toolkit.h.url_for('google_analytics.report', id=id)
     toolkit.h.redirect_to(report_page)
+
+
+def organization(id=None):
+    context = {
+        'model': model, 'session': model.Session,
+        'user': toolkit.c.user, 'auth_user_obj': toolkit.c.userobj,
+        'for_view': True
+    }
+
+    data_dict = {'id': id}
+
+    try:
+        logic.check_access('organization_update', context, data_dict)
+    except NotAuthorized:
+        toolkit.abort(403, _('Unauthorized to view.'))
+
+    try:
+        org = toolkit.get_action('organization_show')(context, data_dict)
+    except:
+        toolkit.abort(404, _('Not Found.'))
+
+    sql = """select name, title, visits_recently, visits_ever
+             from package
+             inner join package_stats on (package.id=package_stats.package_id)
+             where
+               state='active'
+               and owner_org=%s
+               and visits_ever > 0
+             order by visits_recently desc
+             """
+
+
+    datasets = model.meta.engine.execute(sql, org['id'])
+
+    log.debug("Organization Dataset statistics: %s", datasets)
+
+    extra_vars = { 'datasets': datasets,
+                   'group_dict': org,
+                   'group_type': "organization" }
+
+    return toolkit.render('organization/dataset_stats.html', extra_vars)
