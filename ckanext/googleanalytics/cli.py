@@ -264,6 +264,8 @@ def get_ga_data_new(service, profile_id, start_date=None, end_date=None):
         if result_count < max_results:
             completed = True
 
+        # NOTE we could get ga:pagePathLevel2 and not have to do this split here.
+
         for result in results.get("rows", []):
             package = result[0]
             package = "/" + "/".join(package.split("/")[2:])

@@ -80,6 +80,9 @@ class LoadAnalytics(CkanCommand):
         model.Session.configure(bind=model.meta.engine)
         self.excecute_command()
 
+    #
+    # Custom replacement for parse_and_save
+    #
     def excecute_command(self):
         """
         Functionality:
@@ -107,7 +110,7 @@ class LoadAnalytics(CkanCommand):
             log.warning("Setting a defualt command: bulk import")
             cmd = "get_ga_data"
 
-        if cmd == "ga_report":
+        if cmd == "ga_report":  # new functionality
             try:
                 start_date = self.args[2]
                 end_date = self.args[3]
@@ -116,19 +119,23 @@ class LoadAnalytics(CkanCommand):
             except IndexError:
                 raise Exception("From date and to date is missing")
 
-        elif cmd == "bulk_import":
+        elif cmd == "bulk_import":   # unnamed elsewhere.
             self.bulk_import()
 
         elif cmd == "get_ga_data":
             query = 'ga:pagePath=~%s,ga:pagePath=~%s' % \
                     (PACKAGE_URL, self.resource_url_tag)
             packages_data = self.get_ga_data(query_filter=query)
-            # self.save_ga_data(packages_data)
+            # self.save_ga_data(packages_data)    # ??? why commented?
             print("Collected %s records from google" % len(packages_data))
 
         else:
             raise Exception("No command found for : {}".format(cmd))
 
+
+    #
+    # No difference from upstream
+    #
     def internal_save(self, packages_data, summary_date):
         engine = model.meta.engine
         # clear out existing data before adding new
@@ -320,6 +327,9 @@ class LoadAnalytics(CkanCommand):
             self.save_ga_data(packages_data)
             log.info("Saved %s records from google" % len(packages_data))
 
+    #
+    # Difference from upstream only in logging
+    #
     def save_ga_data(self, packages_data):
         """Save tuples of packages_data to the database
         """
@@ -395,6 +405,9 @@ class LoadAnalytics(CkanCommand):
         )
         return results
 
+    #
+    # Only difference from upstream is queries for url map
+    #
     def get_ga_data(self, query_filter=None, start_date=None, end_date=None):
         """Get raw data from Google Analtyics for packages and
         resources, and for both the last two weeks and ever.
@@ -408,7 +421,7 @@ class LoadAnalytics(CkanCommand):
         recent_date = recent_date.strftime("%Y-%m-%d")
         floor_date = datetime.date(2005, 1, 1)
         packages = {}
-        queries = ["ga:pagePath=~%s" % _url for _url in url_map]
+        queries = ["ga:pagePath=~%s" % _url for _url in url_map] # difference
         dates = {"recent": recent_date, "ever": floor_date}
         for date_name, date in list(dates.items()):
             for query in queries:

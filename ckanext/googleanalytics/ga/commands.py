@@ -45,6 +45,7 @@ def get_data_for_events(service, profile_id, event_category, event_action, from_
     if not metrics:
         metrics = "ga:uniqueEvents"
 
+    # add ga:dimension1,ga:dimension2...
     if not dimensions:
         dimensions = "ga:eventCategory,ga:eventAction,ga:eventLabel"
 
