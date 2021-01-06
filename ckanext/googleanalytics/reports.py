@@ -88,7 +88,7 @@ def report(id=None):
 
     try:
         logic.check_access('sysadmin', context, data_dict)
-    except NotAuthorized:
+    except logic.NotAuthorized:
         toolkit.abort(403, _('Unauthorized to view or run this. Only sysadmin can run or view this'))
 
 
@@ -218,7 +218,7 @@ def organization(id=None):
 
     try:
         logic.check_access('organization_update', context, data_dict)
-    except NotAuthorized:
+    except logic.NotAuthorized:
         toolkit.abort(403, _('Unauthorized to view.'))
 
     try:
