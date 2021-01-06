@@ -115,7 +115,8 @@ def report(id=None):
                 toolkit.h.flash_success(
                     _('Background job has been triggered. '
                       'Please visit this page after some time. Id: {}'.format(res.get("job_id", ''))))
-                return toolkit.render('user/ga_report.html', extra_vars=vars)
+                report_page = toolkit.h.url_for('google_analytics.report', id=id)
+                return toolkit.h.redirect_to(report_page)
 
             except logic.NotAuthorized as e:
                 log.error(e)
@@ -225,7 +226,7 @@ def download(id=None, run_id=None, action_name=None):
 
     # If not data available. This should not occur.
     report_page = toolkit.h.url_for('google_analytics.report', id=id)
-    toolkit.h.redirect_to(report_page)
+    return toolkit.h.redirect_to(report_page)
 
 
 def organization(id=None):
