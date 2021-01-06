@@ -126,11 +126,11 @@ class GoogleAnalyticsCredentialsObject:
         _file_name = config.get("googleanalytics.credential.file.name",
                                 "opendevelopmentmekong2-6cd98ea6d5d9.json")
 
-        file = "{}{}".format(self._default_path, _file_name)
-        if not os.path.isfile(file):
-            raise NotFound("Google Analytics credentials error. Contact system admin")
+        path = "{}{}".format(self._default_path, _file_name)
+        if not os.path.isfile(path):
+            raise NotFound("Google Analytics credentials error. Contact system admin: %s Not found" % path)
 
-        return file
+        return path
 
     def set_credentials(self):
         """
