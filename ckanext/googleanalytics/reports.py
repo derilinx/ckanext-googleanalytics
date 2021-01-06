@@ -16,7 +16,12 @@ from ckanext.googleanalytics import helper as ga_h
 from ckanext.googleanalytics import action as ga_action
 from datetime import datetime
 
-
+IS_ODM = False
+try:
+    from ckanext import odm_profile
+    IS_ODM = True
+except:
+    pass
 
 log = logging.getLogger('ckanext.googleanalytics')
 
@@ -73,7 +78,8 @@ def report(id=None):
         "errors": {},
         "error_summary": {},
         'form_options': [],
-        'data_dict': dict()
+        'data_dict': dict(),
+        'is_odm': IS_ODM,
     }
 
     site_code = toolkit.config.get("ckanext.odm.site_code", None)
