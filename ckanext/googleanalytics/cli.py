@@ -303,6 +303,9 @@ def save_ga_data(packages_data):
             if "/" in package_name:
                 log.warning("%s not a valid package name" % package_name)
                 continue
+            package_name=package_name.split('?')[0]
+            if not package_name:
+                continue
             item = model.Package.by_name(package_name)
             if not item:
                 log.warning("Couldn't find package %s" % package_name)
