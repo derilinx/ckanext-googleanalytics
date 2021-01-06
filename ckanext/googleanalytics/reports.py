@@ -193,8 +193,7 @@ def download(id=None, run_id=None, action_name=None):
         toolkit.abort(403, _('This should not occur.'))
 
     if data and fieldnames:
-
-        file_object = io.StringIO()
+        file_object = io.BytesIO()
         try:
             writer = csv.DictWriter(file_object, fieldnames=[_replace_labels.get(x, x) for x in fieldnames],
                                     quoting=csv.QUOTE_ALL)
@@ -212,14 +211,24 @@ def download(id=None, run_id=None, action_name=None):
         except Exception as e:
             log.error(e)
             pass
-        finally:
-            result = file_object.getvalue()
-            file_object.close()
+
+        result = file_object.getvalue()
 
         if result:
             file_name = "{}_{}".format(run_id, action_name)
-            toolkit.response.headers['Content-type'] = 'text/csv'
-            toolkit.response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
+
+            def _setheaders(response):
+                response.headers['Content-type'] = 'text/csv'
+                response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
+
+            try:
+                _setheaders(toolkit.response)
+            except TypeError:
+                import flask
+                response = flask.make_response(result)
+                _setheaders(response)
+                return response
+
             return result
         else:
             toolkit.h.flash_success(_("The download event is empty for the given period"))
