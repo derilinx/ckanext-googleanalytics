@@ -80,6 +80,7 @@ def report(id=None):
         'form_options': [],
         'data_dict': dict(),
         'is_odm': IS_ODM,
+        "username": toolkit.c.user,
     }
 
     site_code = toolkit.config.get("ckanext.odm.site_code", None)

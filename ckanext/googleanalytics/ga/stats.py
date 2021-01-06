@@ -42,7 +42,7 @@ class GoogleAnalyticsViews:
         self.start_date = start_date
         self.end_date = end_date
         self._update_views_containing_filters = False
-        self._site_code = site_code or self._config.get("ckanext.odm.site_code")
+        self._site_code = site_code or self._config.get("ckanext.odm.site_code") or "default"
         self._capture_download = self._config.get("ckanext.googleanalytics.capture_download", True)
         self.downloads = dict()
         self.dataset_views = dict()

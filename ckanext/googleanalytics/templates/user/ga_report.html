@@ -34,7 +34,7 @@
 
 
     {% if table_data %}
-        {% snippet 'user/snippets/ga_table.html', table_data=table_data %}
+        {% snippet 'user/snippets/ga_table.html', table_data=table_data, username=username%}
 
         {% block clear_form %}
             <form id="ga-clear-data" class="dataset-form" method="post" action="{{ action }}" data-module="basic-form">
