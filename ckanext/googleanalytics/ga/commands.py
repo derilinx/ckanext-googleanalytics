@@ -175,6 +175,7 @@ def ga_report(service, profile_id, start_date=None, end_date=None, site_code=Non
 
             # Loop over all the events
             for _event in events:
+                log.info("Downloading %s info", _event)
                 _category, _action = _event.strip().split(":")
                 ga_evt_res = get_data_for_events(service, profile_id, _category, _action, from_date=start_date, to_date=end_date)
                 if _action.lower() == "download":
@@ -184,7 +185,7 @@ def ga_report(service, profile_id, start_date=None, end_date=None, site_code=Non
                 else:
                     log.error("Parser is not defined for the event: {}, hence ignoring".format(_action))
                     log.info("Parser is not defined for the event: {}, hence ignoring".format(_action))
-
+                log.info("Finished %s info", _event)
         # Save all the events
         ga_views.save_to_db("ga_report_events", "events")
         # Print the summary
