@@ -7,9 +7,9 @@ import re
 import logging
 import click
 import ckan.model as model
-
 from . import dbutil
 
+from ckan.cli import tracking
 import ckan.plugins.toolkit as tk
 
 log = logging.getLogger(__name__)
@@ -207,6 +207,7 @@ def bulk_import(service, profile_id, start_date=None):
         else:
             start_date = datetime.datetime(2011, 1, 1)
     end_date = datetime.datetime.now()
+    original_start_date = start_date
     while start_date < end_date:
         stop_date = start_date + datetime.timedelta(1)
         packages_data = get_ga_data_new(
@@ -218,7 +219,7 @@ def bulk_import(service, profile_id, start_date=None):
         start_date = stop_date
         log.info("%s received %s" % (len(packages_data), start_date))
         print("%s received %s" % (len(packages_data), start_date))
-
+    tracking.update_tracking_solr(model.meta.engine, original_start_date)
 
 def get_ga_data_new(service, profile_id, start_date=None, end_date=None):
     """Get raw data from Google Analtyics for packages and
