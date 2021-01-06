@@ -91,13 +91,12 @@ def report(id=None):
     except logic.NotAuthorized:
         toolkit.abort(403, _('Unauthorized to view or run this. Only sysadmin can run or view this'))
 
-
     if toolkit.request.method == "GET":
         vars['data_dict']['to_dt'] = datetime.now().strftime('%Y-%m-%d')
         return toolkit.render('user/ga_report.html', extra_vars=vars)
 
     if toolkit.request.method == "POST":
-        _parms = request.params
+        _parms = toolkit.request.form
 
         # This on press of button Generate Report
         if "run" in _parms:
@@ -106,28 +105,43 @@ def report(id=None):
             data_dict['site_code'] = _parms.get('site_code')
             try:
                 res = ga_action.ga_report_run(context, data_dict)
-                toolkit.h.flash_success(_('Background job has been triggered. '
-                                  'Please visit this page after sometime. Id: {}'.format(res.get("job_id", ''))))
+                toolkit.h.flash_success(
+                    _('Background job has been triggered. '
+                      'Please visit this page after some time. Id: {}'.format(res.get("job_id", ''))))
+                return toolkit.render('user/ga_report.html', extra_vars=vars)
+
             except logic.NotAuthorized as e:
+                log.error(e)
                 vars["errors"] = e.error_dict
                 vars["error_summary"] = e.error_summary
                 toolkit.h.flash_error(_("Not authorized to run this. Only sysadmin can run this."))
                 toolkit.abort(403, _('Unauthorized to view or run this.'))
             except logic.ValidationError as e:
+                log.error(e)
                 vars["errors"] = e.error_dict
                 vars["error_summary"] = e.error_summary
                 vars['data_dict'] = data_dict
                 toolkit.h.flash_error(_("Form validation error. Please check the given dates"))
                 return toolkit.render('user/ga_report.html', extra_vars=vars)
+            except Exception as e:
+                log.error(e)
+                # unexpected error
+                vars["errors"] = e.error_dict
+                vars["error_summary"] = e.error_summary
+                vars['data_dict'] = data_dict
+                toolkit.h.flash_error(_("Unexpected error"))
+                return toolkit.render('user/ga_report.html', extra_vars=vars)
+
 
         # This on press of button Clear
         elif "clear" in _parms:
             _clear_tables()
             toolkit.h.flash_success(_('Cleared all Google Analytics report table'))
 
-        report_page = toolkit.h.url_for(controller='ckanext.googleanalytics.controller:GAReport', action='report', id=id)
-        toolkit.h.redirect_to(report_page)
+        report_page = toolkit.h.url_for('google_analytics.report', id=id)
+        return toolkit.h.redirect_to(report_page)
 
+    log.error("fallthrough: %s", toolkit.request.__dict__)
 
 def download(id=None, run_id=None, action_name=None):
     """

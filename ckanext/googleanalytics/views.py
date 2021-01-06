@@ -92,7 +92,7 @@ def _post_analytics(
         GoogleAnalyticsPlugin.analytics_queue.put(data_dict)
 
 
-ga.add_url_rule("/user/<id>/report", "report", view_func=reports.report)
+ga.add_url_rule("/user/<id>/report", "report", view_func=reports.report, methods=["GET", "HEAD", "POST"])
 ga.add_url_rule('/user/<id>/download_report/<run_id>/<action_name>', "report_download", view_func=reports.download)
 
 ga.add_url_rule("/organization/<id>/dataset_stats", "org_dataset_stats", view_func=reports.organization)
