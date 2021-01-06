@@ -21,7 +21,11 @@ PROFILES_URL_REGEX = re.compile('.*/profile/([a-z0-9-_]+)')
 EVENT_CATEGORIES_ACTION = "Resource:Download"
 
 # This should go to config
-DATASET_TYPES = "dataset laws_record agreement library_record map profile"
+try:
+    from ckanext import odm_profile
+    DATASET_TYPES = "dataset laws_record agreement library_record map profile"
+except:
+    DATASET_TYPES = "dataset"
 
 
 def get_data_for_events(service, profile_id, event_category, event_action, from_date=None, to_date=None,
