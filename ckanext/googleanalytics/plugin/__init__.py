@@ -174,7 +174,6 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
             user_properties['user_type'] = 'psbadmin'
 
         pkg_dict = getattr(tk.c, 'pkg_dict', {})
-        log.debug('ga_header: pkg_dict: %s', pkg_dict)
         if pkg_dict and pkg_dict.get('organization'):
             config['org'] = pkg_dict['organization']['name']
             config['dataset'] = pkg_dict['name']
