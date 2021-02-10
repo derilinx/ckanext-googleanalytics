@@ -166,7 +166,7 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
         user_properties = { 'user_type': 'public' }
         custom_data = {}
 
-        if tk.c.is_psb_user:
+        if hasattr(tk.c, "is_psb_user") and tk.c.is_psb_user:
             user_properties['user_type'] = 'psb'
         elif tk.c.userobj and tk.c.userobj.sysadmin:
             user_properties['user_type'] = 'admin'
