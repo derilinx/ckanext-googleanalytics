@@ -118,14 +118,6 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
             t.setDaemon(True)
             t.start()
 
-    def update_config(self, config):
-        """Change the CKAN (Pylons) environment configuration.
-
-        See IConfigurer.
-
-        """
-        p.toolkit.add_template_directory(config, "../templates")
-
     def get_helpers(self):
         """Return the CKAN 2.0 template helper functions this plugin provides.
 
