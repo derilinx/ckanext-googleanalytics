@@ -95,6 +95,8 @@ def report(id=None):
 
     try:
         logic.check_access('sysadmin', context, data_dict)
+        if not (context['auth_user_obj'].name == id or context['auth_user_obj'].id == id):
+            raise logic.NotAuthorized
     except logic.NotAuthorized:
         toolkit.abort(403, _('Unauthorized to view or run this. Only sysadmin can run or view this'))
 
