@@ -35,23 +35,20 @@
             <div class="dropdown-menu">
               <li class="dropdown-item" value="package_report">
                 <a target="_blank"
-                   href="{% url_for "google_analytics.report_download",
-                                    id=username, run_id=item[0],
-                                    action_name="package_report" %}">
+                   href="{{ h.url_for('google_analytics.report_download',
+                   id=username, run_id=item[0], action_name='package_report') }}">
                   {{_("Dataset Views")}}</a>
               </li>
               <li class="dropdown-item" value="resource_report">
                 <a target="_blank"
-                   href="{% url_for "google_analytics.report_download",
-                                    id=username, run_id=item[0],
-                                    action_name="resource_report" %}">
+                   href="{{ h.url_for('google_analytics.report_download',
+                   id=username, run_id=item[0], action_name='resource_report') }}">
                   {{_("Resource Views")}}</a>
               </li>
               <li class="dropdown-item" value="event_report">
                 <a target="_blank"
-                   href="{% url_for "google_analytics.report_download",
-                                    id=username, run_id=item[0],
-                                    action_name="download_report" %}">
+                   href="{{ h.url_for('google_analytics.report_download',
+                   id=username, run_id=item[0], action_name='event_report') }}">
                   {{_("Download Events")}}</a>
               </li>
             </div>
