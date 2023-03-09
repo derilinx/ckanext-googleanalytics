@@ -158,11 +158,11 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
         user_properties = { 'user_type': 'public' }
         custom_data = {}
 
-        if hasattr(tk.c, "is_psb_user") and tk.c.is_psb_user:
+        if getattr(tk.c, "is_psb_user", None):
             user_properties['user_type'] = 'psb'
-        elif tk.c.userobj and tk.c.userobj.sysadmin:
+        elif hasattr(tk.c, "userobj") and getattr(tk.c.userobj, "sysadmin", None):
             user_properties['user_type'] = 'admin'
-        elif tk.c.userobj:
+        elif getattr(tk.c, "userobj", None):
             user_properties['user_type'] = 'psbadmin'
 
         pkg_dict = getattr(tk.c, 'pkg_dict', {})
