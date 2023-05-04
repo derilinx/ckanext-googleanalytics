@@ -118,14 +118,6 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
             t.setDaemon(True)
             t.start()
 
-    def update_config(self, config):
-        """Change the CKAN (Pylons) environment configuration.
-
-        See IConfigurer.
-
-        """
-        p.toolkit.add_template_directory(config, "../templates")
-
     def get_helpers(self):
         """Return the CKAN 2.0 template helper functions this plugin provides.
 
@@ -166,15 +158,14 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
         user_properties = { 'user_type': 'public' }
         custom_data = {}
 
-        if tk.c.is_psb_user:
+        if getattr(tk.c, "is_psb_user", None):
             user_properties['user_type'] = 'psb'
-        elif tk.c.userobj and tk.c.userobj.sysadmin:
+        elif hasattr(tk.c, "userobj") and getattr(tk.c.userobj, "sysadmin", None):
             user_properties['user_type'] = 'admin'
-        elif tk.c.userobj:
+        elif getattr(tk.c, "userobj", None):
             user_properties['user_type'] = 'psbadmin'
 
         pkg_dict = getattr(tk.c, 'pkg_dict', {})
-        log.debug('ga_header: pkg_dict: %s', pkg_dict)
         if pkg_dict and pkg_dict.get('organization'):
             config['org'] = pkg_dict['organization']['name']
             config['dataset'] = pkg_dict['name']

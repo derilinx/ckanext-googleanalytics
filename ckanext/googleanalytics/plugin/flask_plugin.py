@@ -12,6 +12,12 @@ class GAMixinPlugin(plugins.SingletonPlugin):
 
     analytics_queue = queue.Queue()
 
+    def update_config(self, config):
+        """Change the CKAN (Pylons) environment configuration.
+        See IConfigurer.
+        """
+        plugins.toolkit.add_template_directory(config, "../templates-2.9")
+
     # IBlueprint
 
     def get_blueprint(self):

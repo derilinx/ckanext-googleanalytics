@@ -95,6 +95,8 @@ def report(id=None):
 
     try:
         logic.check_access('sysadmin', context, data_dict)
+        if not (context['auth_user_obj'].name == id or context['auth_user_obj'].id == id):
+            raise logic.NotAuthorized
     except logic.NotAuthorized:
         toolkit.abort(403, _('Unauthorized to view or run this. Only sysadmin can run or view this'))
 
@@ -151,6 +153,7 @@ def report(id=None):
 
     log.error("fallthrough: %s", toolkit.request.__dict__)
 
+
 def download(id=None, run_id=None, action_name=None):
     """
     Download the file object given run id and action
@@ -190,7 +193,7 @@ def download(id=None, run_id=None, action_name=None):
         data, fieldnames = _get_db_data(dbutil.GAReportEvents, run_id)
         _replace_labels["metric_value"] = "resource_download_count"
     else:
-        toolkit.abort(403, _('This should not occur.'))
+        toolkit.abort(500, _('This should not occur.'))
 
     if data and fieldnames:
         file_object = io.BytesIO()
