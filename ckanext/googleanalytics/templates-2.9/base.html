@@ -33,4 +33,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
              data-module-googleanalytics_resource_prefix="{{ g.googleanalytics_resource_prefix }}">
         </div>
     {% endblock %}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YNH7ZB4LTH"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YNH7ZB4LTH', {"debug_mode": true, "custom_map": {"dimension2": "dataset", "dimension3": "user_type", "dimension1": "org"}, "user_type": "public", "anonymizeIp": true});
+</script>
 {% endblock %}
+
