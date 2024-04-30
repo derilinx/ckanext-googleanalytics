@@ -28,7 +28,7 @@ setup(
 	# Add plugins here, eg
 	googleanalytics=ckanext.googleanalytics.plugin:GoogleAnalyticsPlugin
 
-        [paste.paster_command]
+        [ckan.ckan_command]
         loadanalytics = ckanext.googleanalytics.commands:LoadAnalytics
         initdb = ckanext.googleanalytics.commands:InitDB
 	""",
