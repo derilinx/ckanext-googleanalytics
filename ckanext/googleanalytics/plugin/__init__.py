@@ -110,7 +110,8 @@ class GoogleAnalyticsPlugin(GAMixinPlugin, p.SingletonPlugin):
             config.get("googleanalytics.enable_user_id", False)
         )
 
-        p.toolkit.add_resource("../assets", "ckanext-googleanalytics")
+        # p.toolkit.add_resource("../assets", "ckanext-googleanalytics")
+        p.toolkit.add_resource("/usr/lib/ckan-extensions/ckanext-googleanalytics/ckanext/googleanalytics/assets", "ckanext-googleanalytics")
 
         # spawn a pool of 5 threads, and pass them queue instance
         for i in range(5):
