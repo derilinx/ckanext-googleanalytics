@@ -199,7 +199,7 @@ class GoogleAnalyticsViews:
                     "package_title": pkg.title or pkg.name,
                     'visits': int(views[0]),
                     'visitors': int(views[1]),
-                    'new_visits': int(views[1]),
+                    'new_visits': int(views[2]),
                     'unique_pageviews': int(views[3]),
                     'type': pkg.type,
                     'private': pkg.private,
@@ -258,53 +258,41 @@ class GoogleAnalyticsViews:
         :return:
         """
         self.events[event_action] = dict()
-        events_data = data.get('rows', [])
 
-        for _event in events_data:
-            # This is the event label
-            _url = _event[2]
-            _event_count = int(_event[3])
-            _event_category = _event[0]
-            _event_action = _event[1]
-            _resource_id = None
-            resource = None
-            # Download event label is separated by pipe (recently made changes - consider the previous type as well)
-            _process = _url.split("|")
-            if len(_process) > 1:
-                # first element is resource id
-                label = _process[1]
-                _resource_id = _process[0].strip()
-                resource = self._get_resource(_resource_id)
+        for row in data:
+            if len(row.dimension_values) > 2:
+                event_label = row.dimension_values[2].value
+                _event_count = int(row.metric_values[0].value)
             else:
-                # if not separated by pipe - check if the url type is of ckan /download/
-                label = _url
-                is_download = re.compile(self.download_regex).match(_url)
+                log.error("Insufficient dimension values in GA4 'Row' object.")
+                continue
+            
+            _process = event_label.split("|")
+            if len(_process) > 1:
+                _resource_id = _process[0].strip()
+                label = _process[1]
+            else:
+                is_download = re.match(self.download_regex, event_label)
                 if is_download:
                     _resource_id = is_download.groups()[0]
                 else:
-                    # URl is not from ckan, hence get id from database given url
-                    # Try to get the resource id from the database given resource url
-                    # This scenario occurs when the resource url is 3rd part url
-
-                    resource = self._get_resource_from_url(label)
+                    resource = self._get_resource_from_url(event_label)
                     if resource:
                         _resource_id = resource.id
+                        label = event_label
 
-            if _resource_id and resource:
-                if _resource_id in self.events:
-                    self.events[event_action][_resource_id]['metrics_value'] += _event_count
+            if _resource_id:
+                if _resource_id in self.events[event_action]:
+                    self.events[event_action][_resource_id]["metric_value"] += _event_count
                 else:
-                    # Create a new event data
                     _data = {
                         'run_id': self._request_id,
                         "metric_type": "events",
                         "metric_value": _event_count,
                         "site_code": self._site_code,
-                        "category": _event_category,
-                        "action": _event_action,
+                        "category": event_action,
                         "id": _resource_id,
-                        'title': resource.name or _resource_id,
-                        "label": label
+                        "title": label,
                     }
                     self.events[event_action][_resource_id] = _data
 
@@ -323,43 +311,48 @@ class GoogleAnalyticsViews:
 
         if not validators.check_ga_query_res(data):
             print("GA query for data type: {} resulted in empty result".format(data_type))
+ 
+        for row in data:
+            if row.dimension_values:
+                _url = row.dimension_values[0].value
+            else:
+                log.error(f"Missing dimension values in GA4 row for data type: {data_type}")
+                continue
 
-        rows = data.get('rows', [])
-        for _item in rows:
-            _url = _item[0]
             url_object = requests.utils.urlparse(_url)
             _url_query = url_object.query
             _url_path = url_object.path
-            _views = _item[1:]
+
+            if row.metric_values:
+                _views = [int(metric.value) for metric in row.metric_values]
+            else:
+                log.error(f"Missing metric values in GA4 row for data type: {data_type}")
+                continue
 
             if not validators.check_resource_views_filters(_url_query):
-
-                # Check if the link is of download?
                 is_download = re.compile(self.download_regex).match(_url_path)
 
-                # Capture the downloads of the resource,
-                # should not contain query
-                # /download/ should be in url path
                 if is_download and self._capture_download:
-                    # Capture the download from the url
-                    # Note: this is used only when there is not download event present
-                    # in ODM there is a resource download event exists which is more accurate
                     _download_id = is_download.groups()[0]
-                    # Enable this if there is not download event
-                    #self.capture_resource_download(resource_id=_download_id, views=_views, label=_url)
-                    pass
-
+                    self.capture_resource_download(
+                        resource_id=_download_id,
+                        views=_views,
+                        label=_url
+                    )
                 else:
-                    # Check for resource and package match regex
-                    # If the group 2 is empty then its dataset views else its resource view
                     is_res_view = re.compile(self.resource_view_regex.format(data_type)).match(_url_path)
                     is_pkg_view = re.compile(self.package_view_regex.format(data_type)).match(_url_path)
-
                     if is_res_view:
                         res_id = is_res_view.groups()[0]
-                        # Capture resource views details
-                        self.capture_resource_view(resource_id=res_id, views=_views, label=_url)
+                        self.capture_resource_view(
+                            resource_id=res_id,
+                            views=_views,
+                            label=_url
+                        )
                     elif is_pkg_view:
                         pkg_id = is_pkg_view.groups()[0]
-                        # This is package view details
-                        self.capture_dataset_view(dataset_id=pkg_id, views=_views, label=_url)
+                        self.capture_dataset_view(
+                            dataset_id=pkg_id,
+                            views=_views,
+                            label=_url
+                        )

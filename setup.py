@@ -20,8 +20,8 @@ setup(
     zip_safe=False,
     install_requires=[
         'rsa==4.5',
-        'google-api-python-client>=1.12, <1.13',
-        'oauth2client==4.1.3'
+        'oauth2client==4.1.3',
+        'google-analytics-data'
     ],
     entry_points="""
         [ckan.plugins]
