@@ -73,39 +73,35 @@ def load(credentials, start_date):
         bulk_import(client, property_id, start_date)
     else:
         now = datetime.datetime.now()
-        end_date = now.strftime("%Y-%m-%d")
         floor_date = datetime.date(2015, 8, 14).strftime("%Y-%m-%d")
         recent_date_start = (now - datetime.timedelta(14)).strftime("%Y-%m-%d")
+        end_date=now.strftime("%Y-%m-%d")
 
+        dates = {"recent": recent_date_start, "ever": floor_date}
         metrics = [Metric(name="screenPageViews"), Metric(name="totalUsers"),]
         dimensions = [Dimension(name="pagePath")]
-        # date_range = DateRange(start_date=floor_date, end_date=end_date)
-        date_ranges = {
-            "recent": DateRange(start_date=recent_date_start, end_date=now.strftime("%Y-%m-%d")),
-            "all_time": DateRange(start_date='2015-08-14', end_date=now.strftime("%Y-%m-%d")),
-        }
 
-        results = {}
 
-        for key, date_range in date_ranges.items():
+        packages = {}
+        for date_name, date in list(dates.items()):
             request = RunReportRequest(
                 property=f"properties/{property_id}",
-                date_ranges=[date_range],
+                date_ranges=[DateRange(start_date=date, end_date=end_date)],
                 metrics=metrics,
                 dimensions=dimensions,
             )
             response = client.run_report(request)
-
-            if response and response.rows:
-                data = {
-                    row.dimension_values[0].value: int(row.metric_values[0].value)
-                    for row in response.rows
-                }
-                results[key] = data
-            else:
-                log.warning("No data returned for the {} period.".format(key))
-        save_ga_data(results)
-        # log.info("Saved %s records from google" % len(packages_data))
+            for row in response.rows:
+                package = row.dimension_values[0].value
+                count = row.metric_values[0].value
+                val = 0 
+                if package in packages and date_name in packages[package]:
+                    val += packages[package][date_name]
+                packages.setdefault(package, {})[date_name] = (
+                    val + int(count)
+                )
+        save_ga_data(packages)
+        log.info("Saved %s records from google" % len(packages))
 
 
 @googleanalytics.command(short_help=u"Generate Report from Google Analytics API")
@@ -289,8 +285,6 @@ def save_ga_data(packages_data):
     for identifier, visits in list(packages_data.items()):
         recently = visits.get("recent", 0)
         ever = visits.get("ever", 0)
-        log.info(identifier)
-        log.info(visits)
         matches = RESOURCE_URL_REGEX.match(identifier)
         if matches:
             resource_url = identifier[len(_resource_url_tag()) :]
@@ -311,12 +305,10 @@ def save_ga_data(packages_data):
             for url in PACKAGE_URLS:
                 if url in identifier:
                     package_name = identifier[len(url) :]
-            print(package_name)
+            if not package_name:
+                continue
             if "/" in package_name:
                 log.warning("%s not a valid package name" % package_name)
-                continue
-            package_name=package_name.split('?')[0]
-            if not package_name:
                 continue
             item = model.Package.by_name(package_name)
             if not item:

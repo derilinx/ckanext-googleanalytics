@@ -52,6 +52,12 @@ class GoogleAnalyticsCredentialsObject:
         self._cred_file = self._get_file()
         self.set_credentials()
 
+    def __repr__(self):
+        return "This is required to call GA from UI"
+
+    def __str__(self):
+        return GoogleAnalyticsCredentialsObject.__doc__
+
     def __call__(self, *args, **kwargs):
         self.set_credentials()
 
