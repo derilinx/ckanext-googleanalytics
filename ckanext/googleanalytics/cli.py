@@ -8,6 +8,8 @@ import logging
 import click
 import ckan.model as model
 from . import dbutil
+from google.analytics.data_v1beta import RunReportRequest, DateRange, Metric, Dimension, OrderBy
+
 
 from ckan.cli import tracking
 import ckan.plugins.toolkit as tk
@@ -59,22 +61,22 @@ def load(credentials, start_date):
     """Parse data from Google Analytics API and store it
     in a local database
     """
-    from .ga_auth import init_service, get_profile_id
+    from .ga_auth import init_client, get_property_id
 
     try:
-        service = init_service(credentials)
+        client = init_client(credentials)
     except TypeError as e:
         raise Exception("Unable to create a service: {0}".format(e))
-    profile_id = get_profile_id(service)
+    property_id = get_property_id(client)
 
     if start_date:
-        bulk_import(service, profile_id, start_date)
+        bulk_import(client, property_id, start_date)
     else:
         query = "ga:pagePath=~%s,ga:pagePath=~%s" % (
             PACKAGE_URL,
             _resource_url_tag(),
         )
-        packages_data = get_ga_data(service, profile_id, query_filter=query)
+        packages_data = get_ga_data(client, property_id, query_filter=query)
         save_ga_data(packages_data)
         log.info("Saved %s records from google" % len(packages_data))
 
@@ -87,16 +89,16 @@ def report(credentials, start_date, end_date):
     """Parse data from Google Analytics API and store it
     in a local database
     """
-    from .ga_auth import init_service, get_profile_id
+    from .ga_auth import init_client, get_property_id
     from .ga import commands
 
     try:
-        service = init_service(credentials)
+        client = init_client(credentials)
     except TypeError as e:
         raise Exception("Unable to create a service: {0}".format(e))
-    profile_id = get_profile_id(service)
+    property_id = get_property_id(client)
 
-    commands.ga_report(service, profile_id, start_date=start_date, end_date=end_date)
+    commands.ga_report(client, property_id, start_date=start_date, end_date=end_date)
 
 
 def _resource_url_tag():
@@ -220,7 +222,7 @@ def bulk_import(service, profile_id, start_date=None):
         print("%s received %s" % (len(packages_data), start_date))
     tracking.update_tracking_solr(model.meta.engine, original_start_date)
 
-def get_ga_data_new(service, profile_id, start_date=None, end_date=None):
+def get_ga_data_new(client, property_id, start_date=None, end_date=None):
     """Get raw data from Google Analtyics for packages and
     resources.
 
@@ -232,52 +234,26 @@ def get_ga_data_new(service, profile_id, start_date=None, end_date=None):
     end_date = end_date.strftime("%Y-%m-%d")
 
     packages = {}
-    query = "ga:pagePath=~%s,ga:pagePath=~%s" % (
-        PACKAGE_URL,
-        _resource_url_tag(),
+    date_range = DateRange(start_date=start_date, end_date=end_date)
+
+    metrics = [Metric(name="screenPageViews")]
+    dimensions = [Dimension(name="pagePath")]
+
+    request = RunReportRequest(
+        property=f"properties/{property_id}",
+        date_ranges=[date_range],
+        metrics=metrics,
+        dimensions=dimensions
     )
-    metrics = "ga:uniquePageviews"
-    sort = "-ga:uniquePageviews"
 
-    start_index = 1
-    max_results = 10000
-    # data retrival is chunked
-    completed = False
-    while not completed:
-        results = (
-            service.data()
-            .ga()
-            .get(
-                ids="ga:%s" % profile_id,
-                filters=query,
-                dimensions="ga:pagePath",
-                start_date=start_date,
-                start_index=start_index,
-                max_results=max_results,
-                metrics=metrics,
-                sort=sort,
-                end_date=end_date,
-            )
-            .execute()
-        )
-        result_count = len(results.get("rows", []))
-        if result_count < max_results:
-            completed = True
+    response = client.run_report(request)
 
-        # NOTE we could get ga:pagePathLevel2 and not have to do this split here.
+    for result in response.rows:
+        package = result.dimension_values[0].value
+        count = int(result.metric_values[0].value)
+        packages[package] = count
 
-        for result in results.get("rows", []):
-            package = result[0]
-            package = "/" + "/".join(package.split("/")[2:])
-            count = result[1]
-            packages[package] = int(count)
-
-        start_index += max_results
-
-        # rate limiting
-        time.sleep(0.2)
     return packages
-
 
 def save_ga_data(packages_data):
     """Save tuples of packages_data to the database
@@ -316,41 +292,35 @@ def save_ga_data(packages_data):
     model.Session.commit()
 
 
-def ga_query(
-    service, profile_id, query_filter=None, from_date=None, metrics=None,
-):
+def ga_query(client, property_id, query_filter=None, from_date=None, metrics=None):
     """Execute a query against Google Analytics
     """
     now = datetime.datetime.now()
     to_date = now.strftime("%Y-%m-%d")
     if isinstance(from_date, datetime.date):
         from_date = from_date.strftime("%Y-%m-%d")
+
     if not metrics:
-        metrics = "ga:visits,ga:visitors,ga:newVisits,ga:uniquePageviews"
-    sort = "-ga:uniquePageviews"
+        metrics = [
+            Metric(name="screenPageViews"),
+            Metric(name="totalUsers"),
+            Metric(name="newUsers"),
+        ]
 
-    print("%s -> %s" % (from_date, to_date))
-
-    results = (
-        service.data()
-        .ga()
-        .get(
-            ids="ga:" + profile_id,
-            start_date=from_date,
-            end_date=to_date,
-            dimensions="ga:pagePath",
-            metrics=metrics,
-            sort=sort,
-            start_index=1,
-            filters=query_filter,
-            max_results=10000,
-        )
-        .execute()
+    date_range = DateRange(start_date=from_date, end_date=to_date)
+    sort = OrderBy(metric=OrderBy.MetricOrderBy(name="screenPageViews", order="DESCENDING"))
+    request = RunReportRequest(
+        property=f"properties/{property_id}",
+        date_ranges=[date_range],
+        metrics=metrics,
+        dimensions=[Dimension(name="pagePath")],
+        order_bys=[sort]
     )
-    return results
 
+    response = client.run_report(request)
+    return response.rows
 
-def get_ga_data(service, profile_id, query_filter):
+def get_ga_data(client, property_id, query_filter):
     """Get raw data from Google Analtyics for packages and
     resources, and for both the last two weeks and ever.
 
@@ -363,30 +333,33 @@ def get_ga_data(service, profile_id, query_filter):
     recent_date = recent_date.strftime("%Y-%m-%d")
     floor_date = datetime.date(2005, 1, 1)
     packages = {}
-    queries = ["ga:pagePath=~%s" % _url for _url in URL_MAP] # patched
     dates = {"recent": recent_date, "ever": floor_date}
-    for date_name, date in list(dates.items()):
-        for query in queries:
-            results = ga_query(
-                service,
-                profile_id,
-                query_filter=query,
-                metrics="ga:uniquePageviews",
-                from_date=date,
-            )
-            if "rows" in results:
-                for result in results.get("rows"):
-                    package = result[0]
-                    if not package.startswith(PACKAGE_URL):
-                        package = "/" + "/".join(package.split("/")[2:])
 
-                    count = result[1]
-                    # Make sure we add the different representations of the same
-                    # dataset /mysite.com & /www.mysite.com ...
-                    val = 0
-                    if package in packages and date_name in packages[package]:
-                        val += packages[package][date_name]
-                    packages.setdefault(package, {})[date_name] = (
-                        int(count) + val
-                    )
+    metrics = [Metric(name="screenPageViews")]
+
+    for date_name, date in dates.items():
+        date_range = DateRange(start_date=date, end_date=recent_date)
+
+        request = RunReportRequest(
+            property=f"properties/{property_id}",
+            date_ranges=[date_range],
+            metrics=metrics,
+            dimensions=[Dimension(name="pagePath")]
+        )
+
+        response = client.run_report(request)
+
+        if "rows" in response:
+            for result in response.rows:
+                package = result.dimension_values[0].value
+                count = int(result.metric_values[0].value)
+
+                if not package.startswith("/"):
+                    package = "/" + "/".join(package.split("/")[2:])
+
+                val = 0
+                if package in packages and date_name in packages[package]:
+                    val += packages[package][date_name]
+                packages.setdefault(package, {})[date_name] = int(count) + val
+
     return packages
