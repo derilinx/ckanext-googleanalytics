@@ -15,7 +15,7 @@ from ckan.cli import tracking
 import ckan.plugins.toolkit as tk
 
 log = logging.getLogger(__name__)
-PACKAGE_URL = "/dataset/"  # XXX get from routes...
+PACKAGE_URLS = ["/dataset/", "/api_record/"]  # XXX get from routes...
 DEFAULT_RESOURCE_URL_TAG = "/downloads/"
 
 RESOURCE_URL_REGEX = re.compile("/dataset/[a-z0-9-_]+/resource/([a-z0-9-_]+)")
@@ -29,9 +29,9 @@ try:
     MAPS = "/maps/"
     PROFILES = "/profile/"
 
-    URL_MAP = [PACKAGE_URL, LIBRARY_URL, LAWS_URL, AGREEMENT_URL, MAPS, PROFILES]
+    URL_MAP = PACKAGE_URLS + [LIBRARY_URL, LAWS_URL, AGREEMENT_URL, MAPS, PROFILES]
 except ImportError:
-    URL_MAP = [PACKAGE_URL]
+    URL_MAP = PACKAGE_URLS
 
 
 def get_commands():
@@ -72,13 +72,40 @@ def load(credentials, start_date):
     if start_date:
         bulk_import(client, property_id, start_date)
     else:
-        query = "ga:pagePath=~%s,ga:pagePath=~%s" % (
-            PACKAGE_URL,
-            _resource_url_tag(),
-        )
-        packages_data = get_ga_data(client, property_id, query_filter=query)
-        save_ga_data(packages_data)
-        log.info("Saved %s records from google" % len(packages_data))
+        now = datetime.datetime.now()
+        end_date = now.strftime("%Y-%m-%d")
+        floor_date = datetime.date(2015, 8, 14).strftime("%Y-%m-%d")
+        recent_date_start = (now - datetime.timedelta(14)).strftime("%Y-%m-%d")
+
+        metrics = [Metric(name="screenPageViews"), Metric(name="totalUsers"),]
+        dimensions = [Dimension(name="pagePath")]
+        # date_range = DateRange(start_date=floor_date, end_date=end_date)
+        date_ranges = {
+            "recent": DateRange(start_date=recent_date_start, end_date=now.strftime("%Y-%m-%d")),
+            "all_time": DateRange(start_date='2015-08-14', end_date=now.strftime("%Y-%m-%d")),
+        }
+
+        results = {}
+
+        for key, date_range in date_ranges.items():
+            request = RunReportRequest(
+                property=f"properties/{property_id}",
+                date_ranges=[date_range],
+                metrics=metrics,
+                dimensions=dimensions,
+            )
+            response = client.run_report(request)
+
+            if response and response.rows:
+                data = {
+                    row.dimension_values[0].value: int(row.metric_values[0].value)
+                    for row in response.rows
+                }
+                results[key] = data
+            else:
+                log.warning("No data returned for the {} period.".format(key))
+        save_ga_data(results)
+        # log.info("Saved %s records from google" % len(packages_data))
 
 
 @googleanalytics.command(short_help=u"Generate Report from Google Analytics API")
@@ -136,19 +163,20 @@ def internal_save(packages_data, summary_date):
 
     # get ids for dataset urls
     sql = """UPDATE tracking_summary t
-             SET package_id = COALESCE(
-                 (SELECT id FROM package p WHERE t.url =  %s || p.name)
-                 ,'~~not~found~~')
-             WHERE t.package_id IS NULL AND tracking_type = 'page';"""
-    engine.execute(sql, PACKAGE_URL)
+                SET package_id = COALESCE(
+                    (SELECT id FROM package p WHERE t.url = ANY (%s) || p.name), '~~not~found~~')
+                WHERE t.package_id IS NULL AND tracking_type = 'page';"""
+    url_patterns = [f"{url}%" for url in PACKAGE_URLS]
+    engine.execute(sql, [url_patterns])
 
     # get ids for dataset edit urls which aren't captured otherwise
     sql = """UPDATE tracking_summary t
-             SET package_id = COALESCE(
-                 (SELECT id FROM package p WHERE t.url =  %s || p.name)
-                 ,'~~not~found~~')
-             WHERE t.package_id = '~~not~found~~' AND tracking_type = 'page';"""
-    engine.execute(sql, "%sedit/" % PACKAGE_URL)
+              SET package_id = COALESCE(
+                  (SELECT id FROM package p WHERE t.url = ANY (%s) || p.name),
+                  '~~not~found~~')
+              WHERE t.package_id = '~~not~found~~' AND tracking_type = 'page';"""
+    edit_patterns = [f"{url}edit/%" for url in PACKAGE_URLS]
+    engine.execute(sql, edit_patterns)
 
     # update summary totals for resources
     sql = """UPDATE tracking_summary t1
@@ -261,6 +289,8 @@ def save_ga_data(packages_data):
     for identifier, visits in list(packages_data.items()):
         recently = visits.get("recent", 0)
         ever = visits.get("ever", 0)
+        log.info(identifier)
+        log.info(visits)
         matches = RESOURCE_URL_REGEX.match(identifier)
         if matches:
             resource_url = identifier[len(_resource_url_tag()) :]
@@ -276,7 +306,12 @@ def save_ga_data(packages_data):
             dbutil.update_resource_visits(resource.id, recently, ever)
             log.info("Updated %s with %s visits" % (resource.id, visits))
         else:
-            package_name = identifier[len(PACKAGE_URL) :]
+            # package_name = identifier[len(PACKAGE_URL) :]
+            package_name = None
+            for url in PACKAGE_URLS:
+                if url in identifier:
+                    package_name = identifier[len(url) :]
+            print(package_name)
             if "/" in package_name:
                 log.warning("%s not a valid package name" % package_name)
                 continue
@@ -329,9 +364,8 @@ def get_ga_data(client, property_id, query_filter):
        {'identifier': {'recent':3, 'ever':6}}
     """
     now = datetime.datetime.now()
-    recent_date = now - datetime.timedelta(14)
-    recent_date = recent_date.strftime("%Y-%m-%d")
-    floor_date = datetime.date(2005, 1, 1)
+    recent_date = (now - datetime.timedelta(14)).strftime("%Y-%m-%d")
+    floor_date = datetime.date(2005, 1, 1).strftime("%Y-%m-%d")
     packages = {}
     dates = {"recent": recent_date, "ever": floor_date}
 
