@@ -20,15 +20,15 @@ setup(
     zip_safe=False,
     install_requires=[
         'rsa==4.5',
-        'google-api-python-client>=1.12, <1.13',
-        'oauth2client==4.1.3'
+        'oauth2client==4.1.3',
+        'google-analytics-data'
     ],
     entry_points="""
         [ckan.plugins]
 	# Add plugins here, eg
 	googleanalytics=ckanext.googleanalytics.plugin:GoogleAnalyticsPlugin
 
-        [paste.paster_command]
+        [ckan.ckan_command]
         loadanalytics = ckanext.googleanalytics.commands:LoadAnalytics
         initdb = ckanext.googleanalytics.commands:InitDB
 	""",

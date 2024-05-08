@@ -196,10 +196,10 @@ def download(id=None, run_id=None, action_name=None):
         toolkit.abort(500, _('This should not occur.'))
 
     if data and fieldnames:
-        file_object = io.BytesIO()
         try:
-            writer = csv.DictWriter(file_object, fieldnames=[_replace_labels.get(x, x) for x in fieldnames],
-                                    quoting=csv.QUOTE_ALL)
+            file_object = io.BytesIO()
+            text_wrapper = io.TextIOWrapper(file_object, encoding="utf-8", newline="")
+            writer = csv.DictWriter(text_wrapper, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
             writer.writeheader()
 
             # For each row in a data
@@ -207,16 +207,15 @@ def download(id=None, run_id=None, action_name=None):
                 csv_dict = dict()
                 # For each column in a row
                 for _field in fieldnames:
-                    csv_dict[_replace_labels.get(_field, _field)] = getattr(row, _field)
-
+                    csv_dict[_replace_labels.get(_field, _field)] = str(getattr(row, _field))
                 # Write to csv
                 writer.writerow(csv_dict)
         except Exception as e:
             log.error(e)
             pass
-
+        
+        text_wrapper.seek(0)
         result = file_object.getvalue()
-
         if result:
             file_name = "{}_{}".format(run_id, action_name)
 
@@ -224,15 +223,10 @@ def download(id=None, run_id=None, action_name=None):
                 response.headers['Content-type'] = 'text/csv'
                 response.headers['Content-disposition'] = 'attachment;filename=%s.csv' % str(file_name)
 
-            try:
-                _setheaders(toolkit.response)
-            except TypeError:
-                import flask
-                response = flask.make_response(result)
-                _setheaders(response)
-                return response
-
-            return result
+            import flask
+            response = flask.make_response(result)
+            _setheaders(response)
+            return response
         else:
             toolkit.h.flash_success(_("The download event is empty for the given period"))
 

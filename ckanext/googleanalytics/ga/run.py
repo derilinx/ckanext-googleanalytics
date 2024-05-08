@@ -19,8 +19,8 @@ def _run_ga(st_dt, ed_dt, site_code):
         log.info("Running GA report for site: {}".format(site_code))
         creds = GoogleAnalyticsCredentialsObject(site_code=site_code)
         creds()
-        commands.ga_report(creds.service, creds.profile_id,
-                           start_date=st_dt, end_date=ed_dt, site_code=site_code)
+        commands.ga_report(creds.client, creds.property_id,
+                            start_date=st_dt, end_date=ed_dt, site_code=site_code)
     except Exception as e:
         # ODC GA credentials not working
         log.error(e)
