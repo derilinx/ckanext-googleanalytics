@@ -27,8 +27,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 {% block scripts %}
     {{ super() }}
     {% block googleanalytics_event_tracking %}
-        {% set type = 'asset' if h.ckan_version() > '2.9' else 'resource' %}
-        {% include 'googleanalytics/snippets/event_tracking_' ~ type ~ '.html' %}
+        {% asset 'ckanext-googleanalytics/event_tracking' %}
         <div class="js-hide" data-module="google-analytics"
              data-module-googleanalytics_resource_prefix="{{ g.googleanalytics_resource_prefix }}">
         </div>
